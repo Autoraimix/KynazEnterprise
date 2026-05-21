@@ -7,6 +7,7 @@ import {
   ResetPasswordBody,
 } from "@workspace/api-zod";
 import { createHash, randomBytes } from "crypto";
+import { sendEmail, emailWelcomeCustomer, emailAgentNewCustomer } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -82,6 +83,33 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
     const token = generateToken(user.id);
     tokenStore.set(token, user.id);
+
+    // Send welcome email + notify agent if referred
+    let agentName: string | undefined;
+    if (referralCode) {
+      const [referrer] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode));
+      if (referrer && referrer.role === "agent") {
+        agentName = referrer.fullName;
+        sendEmail({
+          to: referrer.email,
+          subject: "New Customer Registered via Your Referral",
+          html: (await import("../lib/email")).emailAgentNewCustomer({
+            agentName: referrer.fullName,
+            customerName: fullName,
+            customerEmail: email,
+          }),
+        }).catch(() => {});
+      }
+    }
+    sendEmail({
+      to: email,
+      subject: "Welcome to Kynaz Enterprise!",
+      html: (await import("../lib/email")).emailWelcomeCustomer({
+        name: fullName,
+        referralCode: newCode,
+        agentName,
+      }),
+    }).catch(() => {});
 
     res.status(201).json({ user: formatUser(user), token });
   } catch (err) {
@@ -164,7 +192,18 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  // In production, send actual email. For now, just acknowledge.
+  const { email } = parsed.data;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (user) {
+    const tempPassword = randomBytes(4).toString("hex");
+    const newHash = hashPassword(tempPassword);
+    await db.update(usersTable).set({ passwordHash: newHash }).where(eq(usersTable.id, user.id));
+    sendEmail({
+      to: email,
+      subject: "Your Kynaz Password Reset",
+      html: `<p>Hi ${user.fullName},</p><p>Your temporary password is: <strong>${tempPassword}</strong></p><p>Please log in and change your password immediately.</p>`,
+    }).catch(() => {});
+  }
   res.json({ message: "If that email is registered, a reset link has been sent." });
 });
 

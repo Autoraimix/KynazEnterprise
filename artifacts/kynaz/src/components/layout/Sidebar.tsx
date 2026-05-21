@@ -8,7 +8,9 @@ import {
   Bell,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Trophy,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +31,7 @@ export function Sidebar({ userRole }: { userRole: string }) {
   const [, setLocation] = useWouterLocation();
   const { logout } = useAuth();
   const isAdmin = userRole === "admin" || userRole === "superadmin";
+  const isAgent = userRole === "agent";
 
   const handleLogout = () => {
     logout();
@@ -48,11 +51,23 @@ export function Sidebar({ userRole }: { userRole: string }) {
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/quotations", label: "Quotations", icon: FileText },
     { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/agents", label: "Agents", icon: Megaphone },
     { href: "/admin/cashback", label: "Cashback Mgt", icon: Wallet },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
-  const links = isAdmin ? adminLinks : customerLinks;
+  const agentLinks = [
+    { href: "/agent", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/agent/customers", label: "My Customers", icon: Users },
+    { href: "/agent/quotations", label: "Quotations", icon: FileText },
+    { href: "/agent/commissions", label: "Commissions", icon: Wallet },
+    { href: "/agent/ranking", label: "Leaderboard", icon: Trophy },
+    { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+    { href: "/dashboard/profile", label: "Profile", icon: User },
+  ];
+
+  const links = isAdmin ? adminLinks : isAgent ? agentLinks : customerLinks;
+  const portalLabel = isAdmin ? "Admin Portal" : isAgent ? "Agent Portal" : "Portal";
 
   return (
     <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground">
@@ -62,7 +77,7 @@ export function Sidebar({ userRole }: { userRole: string }) {
             K
           </div>
           <span className="font-serif font-bold text-xl text-sidebar-foreground">
-            {isAdmin ? "Admin Portal" : "Portal"}
+            {portalLabel}
           </span>
         </Link>
       </div>

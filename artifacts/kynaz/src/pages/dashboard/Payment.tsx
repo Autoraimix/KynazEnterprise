@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Copy, CheckCircle2, Upload, MessageCircle, QrCode, Building2, AlertCircle, PartyPopper } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle2, Upload, MessageCircle, QrCode, Building2, AlertCircle, PartyPopper, X, ZoomIn } from "lucide-react";
 import { useState, useRef } from "react";
 import duitnowQR from "@assets/shared_image_1779027541026.jpg";
 
@@ -35,6 +35,7 @@ export default function Payment() {
   const [copied, setCopied] = useState<string | null>(null);
   const [proofSubmitted, setProofSubmitted] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
+  const [showQREnlarged, setShowQREnlarged] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const totalPrice = quotation
@@ -209,15 +210,26 @@ export default function Payment() {
                   <QrCode size={18} className="text-primary" />
                   <h3 className="font-semibold text-foreground">DuitNow QR</h3>
                 </div>
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={duitnowQR}
-                    alt="DuitNow QR Code"
-                    className="w-48 h-48 object-contain rounded-lg border border-border shadow-sm"
-                  />
+                <div className="flex justify-center mb-4 relative group">
+                  <button
+                    onClick={() => setShowQREnlarged(true)}
+                    className="relative cursor-zoom-in"
+                    title="Click to enlarge QR code"
+                  >
+                    <img
+                      src={duitnowQR}
+                      alt="DuitNow QR Code"
+                      className="w-48 h-48 object-contain rounded-lg border border-border shadow-sm group-hover:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="bg-black/50 rounded-full p-2">
+                        <ZoomIn size={20} className="text-white" />
+                      </div>
+                    </div>
+                  </button>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Scan with any Malaysian banking app or e-wallet that supports DuitNow
+                  Tap the QR to enlarge · Scan with any Malaysian banking app or e-wallet
                 </p>
               </div>
 
@@ -336,6 +348,38 @@ export default function Payment() {
           </motion.div>
         )}
       </div>
+
+      {/* QR Code Enlarged Lightbox */}
+      {showQREnlarged && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setShowQREnlarged(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQREnlarged(false)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X size={22} />
+            </button>
+            <div className="flex items-center gap-2 mb-4">
+              <QrCode size={18} className="text-primary" />
+              <h3 className="font-semibold text-foreground">DuitNow QR Code</h3>
+            </div>
+            <img
+              src={duitnowQR}
+              alt="DuitNow QR Code Enlarged"
+              className="w-full object-contain rounded-xl border border-border shadow-sm"
+            />
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Scan with any Malaysian banking app or e-wallet that supports DuitNow
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Finish Payment Confirmation Dialog */}
       <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>

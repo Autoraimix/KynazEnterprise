@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
 import {
   db, usersTable, quotationsTable, servicesTable,
-  cashbackTransactionsTable, settingsTable, testimonialsTable, notificationsTable
+  cashbackTransactionsTable, settingsTable, testimonialsTable, notificationsTable, agentsTable, commissionsTable
 } from "@workspace/db";
 import {
   UpdateAdminUserBody,
@@ -12,6 +12,7 @@ import {
   SetQuotationSpeedBody,
 } from "@workspace/api-zod";
 import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
+import { sendEmail, emailQuotationReady, emailPaymentVerified, emailCashbackCredited, emailAgentQuotationUpdate } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -240,54 +241,158 @@ router.patch("/admin/quotations/:id", requireAdmin, async (req, res): Promise<vo
         isRead: false,
       });
     } catch (_e) { /* non-fatal */ }
+
+    // Email customer
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
+    const [svc] = await db.select().from(servicesTable).where(eq(servicesTable.id, updated.serviceId));
+    if (customer) {
+      const dashUrl = `${process.env.APP_URL ?? "https://kynazenteprise.my"}/dashboard/quotations/${updated.id}`;
+      sendEmail({
+        to: customer.email,
+        subject: `Your Quotation is Ready — ${updated.quotationRef ?? `#${updated.id}`}`,
+        html: emailQuotationReady({
+          name: customer.fullName,
+          ref: updated.quotationRef ?? `#${updated.id}`,
+          service: svc?.name ?? "Service",
+          price: updated.price ? parseFloat(updated.price) : undefined,
+          dashboardUrl: dashUrl,
+        }),
+      }).catch(() => {});
+
+      // Notify agent if customer was referred by one
+      if (customer.referredByCode) {
+        const [agentUser] = await db.select().from(usersTable).where(eq(usersTable.referralCode, customer.referredByCode));
+        if (agentUser && agentUser.role === "agent") {
+          sendEmail({
+            to: agentUser.email,
+            subject: `Customer Quotation Ready — ${updated.quotationRef ?? `#${updated.id}`}`,
+            html: emailAgentQuotationUpdate({
+              agentName: agentUser.fullName,
+              customerName: customer.fullName,
+              ref: updated.quotationRef ?? `#${updated.id}`,
+              status: "ready",
+            }),
+          }).catch(() => {});
+        }
+      }
+    }
   }
 
   // Handle payment verification — when admin sets status to "paid"
   if (parsed.data.status === "paid" && currentQuotation.status !== "paid" && updated.userId) {
     const priceVal = updated.price ? parseFloat(updated.price) : null;
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
+    const [svc] = await db.select().from(servicesTable).where(eq(servicesTable.id, updated.serviceId));
 
     if (priceVal && priceVal > 0) {
       try {
         const rate = await getCashbackRate();
         const cashbackAmount = parseFloat((priceVal * rate / 100).toFixed(2));
 
-        if (cashbackAmount > 0) {
-          const [user] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
-          if (user) {
-            const currentBalance = parseFloat(user.cashbackBalance);
-            const newBalance = currentBalance + cashbackAmount;
+        if (cashbackAmount > 0 && customer) {
+          const currentBalance = parseFloat(customer.cashbackBalance);
+          const newBalance = currentBalance + cashbackAmount;
 
-            await db.insert(cashbackTransactionsTable).values({
-              userId: updated.userId,
-              type: "earned",
-              amount: cashbackAmount.toFixed(2),
-              description: `Cashback for ${updated.quotationRef ?? `quotation #${updated.id}`} (${rate}% of RM${priceVal.toFixed(2)})`,
-              referenceId: updated.id,
-            });
+          await db.insert(cashbackTransactionsTable).values({
+            userId: updated.userId,
+            type: "earned",
+            amount: cashbackAmount.toFixed(2),
+            description: `Cashback for ${updated.quotationRef ?? `quotation #${updated.id}`} (${rate}% of RM${priceVal.toFixed(2)})`,
+            referenceId: updated.id,
+          });
 
-            await db.update(usersTable)
-              .set({ cashbackBalance: newBalance.toFixed(2) })
-              .where(eq(usersTable.id, updated.userId));
+          await db.update(usersTable)
+            .set({ cashbackBalance: newBalance.toFixed(2) })
+            .where(eq(usersTable.id, updated.userId));
 
-            await db.insert(notificationsTable).values({
-              userId: updated.userId,
-              title: "Payment Verified & Cashback Credited",
-              message: `Your payment for ${updated.quotationRef ?? `quotation #${updated.id}`} has been verified. RM${cashbackAmount.toFixed(2)} cashback has been credited to your wallet.`,
-              type: "cashback",
-              isRead: false,
-            });
+          await db.insert(notificationsTable).values({
+            userId: updated.userId,
+            title: "Payment Verified & Cashback Credited",
+            message: `Your payment for ${updated.quotationRef ?? `quotation #${updated.id}`} has been verified. RM${cashbackAmount.toFixed(2)} cashback has been credited to your wallet.`,
+            type: "cashback",
+            isRead: false,
+          });
+
+          // Email customer
+          sendEmail({
+            to: customer.email,
+            subject: `Payment Verified — ${updated.quotationRef ?? `#${updated.id}`}`,
+            html: emailPaymentVerified({
+              name: customer.fullName,
+              ref: updated.quotationRef ?? `#${updated.id}`,
+              service: svc?.name ?? "Service",
+              cashback: cashbackAmount,
+            }),
+          }).catch(() => {});
+        }
+
+        // Award agent commission
+        if (customer?.referredByCode) {
+          const [agentUser] = await db.select().from(usersTable).where(eq(usersTable.referralCode, customer.referredByCode));
+          if (agentUser && agentUser.role === "agent") {
+            const [agentRow] = await db.select().from(agentsTable).where(eq(agentsTable.userId, agentUser.id));
+            if (agentRow) {
+              const commRate = parseFloat(agentRow.commissionRate);
+              const commission = parseFloat((priceVal * commRate / 100).toFixed(2));
+              const newCommBalance = parseFloat(agentRow.commissionBalance) + commission;
+              const newTotalComm = parseFloat(agentRow.totalCommission) + commission;
+              const newPoints = agentRow.points + Math.floor(priceVal);
+              const newSales = agentRow.totalSales + 1;
+              const newBadge = newPoints >= 10000 ? "elite" : newPoints >= 5000 ? "platinum" : newPoints >= 2000 ? "gold" : newPoints >= 500 ? "silver" : "bronze";
+
+              await db.update(agentsTable).set({
+                commissionBalance: newCommBalance.toFixed(2),
+                totalCommission: newTotalComm.toFixed(2),
+                totalSales: newSales,
+                points: newPoints,
+                badge: newBadge,
+                updatedAt: new Date(),
+              }).where(eq(agentsTable.id, agentRow.id));
+
+              await db.insert(commissionsTable).values({
+                agentId: agentRow.id,
+                quotationId: updated.id,
+                customerId: updated.userId,
+                amount: commission.toFixed(2),
+                rate: commRate.toFixed(2),
+                status: "pending",
+                description: `Commission for ${updated.quotationRef ?? `quotation #${updated.id}`} (${commRate}% of RM${priceVal.toFixed(2)})`,
+              });
+
+              sendEmail({
+                to: agentUser.email,
+                subject: `Commission Earned — ${updated.quotationRef ?? `#${updated.id}`}`,
+                html: emailAgentQuotationUpdate({
+                  agentName: agentUser.fullName,
+                  customerName: customer.fullName,
+                  ref: updated.quotationRef ?? `#${updated.id}`,
+                  status: "paid",
+                }),
+              }).catch(() => {});
+            }
           }
         }
       } catch (_e) { /* non-fatal */ }
     } else {
       try {
-        await db.insert(notificationsTable).values({
-          userId: updated.userId,
-          title: "Payment Verified",
-          message: `Your payment for ${updated.quotationRef ?? `quotation #${updated.id}`} has been verified and confirmed.`,
-          type: "quotation",
-          isRead: false,
-        });
+        if (customer) {
+          await db.insert(notificationsTable).values({
+            userId: updated.userId,
+            title: "Payment Verified",
+            message: `Your payment for ${updated.quotationRef ?? `quotation #${updated.id}`} has been verified and confirmed.`,
+            type: "quotation",
+            isRead: false,
+          });
+          sendEmail({
+            to: customer.email,
+            subject: `Payment Verified — ${updated.quotationRef ?? `#${updated.id}`}`,
+            html: emailPaymentVerified({
+              name: customer.fullName,
+              ref: updated.quotationRef ?? `#${updated.id}`,
+              service: svc?.name ?? "Service",
+            }),
+          }).catch(() => {});
+        }
       } catch (_e) { /* non-fatal */ }
     }
   }
@@ -348,6 +453,20 @@ router.post("/admin/cashback", requireAdmin, async (req, res): Promise<void> => 
   await db.update(usersTable)
     .set({ cashbackBalance: newBalance.toFixed(2) })
     .where(eq(usersTable.id, userId));
+
+  // Send email for cashback credit/adjustment
+  if (type === "earned" || type === "adjusted" || type === "promotion" || type === "referral") {
+    sendEmail({
+      to: user.email,
+      subject: "Cashback Credited to Your Kynaz Wallet",
+      html: emailCashbackCredited({
+        name: user.fullName,
+        amount,
+        description,
+        balance: newBalance,
+      }),
+    }).catch(() => {});
+  }
 
   res.status(201).json({
     id: tx.id,

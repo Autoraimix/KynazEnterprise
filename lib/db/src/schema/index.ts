@@ -5,3 +5,4 @@ export * from "./cashback";
 export * from "./notifications";
 export * from "./referrals";
 export * from "./settings";
+export * from "./agents";

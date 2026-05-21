@@ -33,6 +33,13 @@ import AdminQuotationDetail from "@/pages/admin/AdminQuotationDetail";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminCashback from "@/pages/admin/AdminCashback";
 import AdminSettings from "@/pages/admin/AdminSettings";
+import AdminAgents from "@/pages/admin/AdminAgents";
+
+import AgentDashboard from "@/pages/agent/AgentDashboard";
+import AgentCustomers from "@/pages/agent/AgentCustomers";
+import AgentQuotations from "@/pages/agent/AgentQuotations";
+import AgentRanking from "@/pages/agent/AgentRanking";
+import AgentCommissions from "@/pages/agent/AgentCommissions";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +84,14 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/cashback" component={AdminCashback} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/agents" component={AdminAgents} />
+
+      {/* Agent routes */}
+      <Route path="/agent" component={AgentDashboard} />
+      <Route path="/agent/customers" component={AgentCustomers} />
+      <Route path="/agent/quotations" component={AgentQuotations} />
+      <Route path="/agent/commissions" component={AgentCommissions} />
+      <Route path="/agent/ranking" component={AgentRanking} />
 
       <Route component={NotFound} />
     </Switch>

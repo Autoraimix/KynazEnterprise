@@ -139,7 +139,7 @@ export async function seedDatabase(): Promise<void> {
       .insert(quotationsTable)
       .values({
         id: Number(q.id),
-        userId: Number(q.user_id),
+        userId: q.user_id ? Number(q.user_id) : null,
         serviceId: Number(q.service_id),
         status: String(q.status) as
           | "pending"
@@ -147,10 +147,16 @@ export async function seedDatabase(): Promise<void> {
           | "ready"
           | "approved"
           | "rejected"
-          | "expired",
+          | "expired"
+          | "paid",
         formData: q.form_data as Record<string, unknown>,
         remarks: q.remarks ? String(q.remarks) : null,
         documentUrl: q.document_url ? String(q.document_url) : null,
+        quotationRef: q.quotation_ref ? String(q.quotation_ref) : null,
+        price: q.price ? String(q.price) : null,
+        taxAmount: q.tax_amount ? String(q.tax_amount) : null,
+        paymentProofUrl: q.payment_proof_url ? String(q.payment_proof_url) : null,
+        isGuest: Boolean(q.is_guest),
         expiresAt: q.expires_at ? new Date(String(q.expires_at)) : null,
         createdAt: new Date(String(q.created_at)),
         updatedAt: new Date(String(q.updated_at)),

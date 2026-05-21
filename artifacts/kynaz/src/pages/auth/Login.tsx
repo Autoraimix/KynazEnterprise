@@ -37,6 +37,8 @@ export default function Login() {
         const role = result.user.role;
         if (role === "admin" || role === "superadmin") {
           setLocation("/admin");
+        } else if (role === "agent") {
+          setLocation("/agent");
         } else {
           setLocation("/dashboard");
         }

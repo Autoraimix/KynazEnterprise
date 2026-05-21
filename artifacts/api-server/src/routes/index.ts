@@ -7,6 +7,7 @@ import cashbackRouter from "./cashback";
 import referralsRouter from "./referrals";
 import dashboardRouter from "./dashboard";
 import adminRouter from "./admin";
+import agentsRouter from "./agents";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(cashbackRouter);
 router.use(referralsRouter);
 router.use(dashboardRouter);
 router.use(adminRouter);
+router.use(agentsRouter);
 
 export default router;

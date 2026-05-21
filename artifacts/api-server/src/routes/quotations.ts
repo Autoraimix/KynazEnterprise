@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db, quotationsTable, servicesTable, usersTable, notificationsTable } from "@workspace/db";
 import { CreateQuotationBody } from "@workspace/api-zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
+import { sendEmail, emailQuotationSubmitted, emailPaymentProofReceived } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -92,6 +93,16 @@ router.post("/quotations", requireAuth, async (req: AuthenticatedRequest, res): 
       isRead: false,
     });
   } catch (_e) { /* non-fatal */ }
+
+  // Send email confirmation
+  const [submitter] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (submitter) {
+    sendEmail({
+      to: submitter.email,
+      subject: `Quotation Received — ${ref}`,
+      html: emailQuotationSubmitted({ name: submitter.fullName, ref, service: service.name }),
+    }).catch(() => {});
+  }
 
   res.status(201).json(formatQuotation(updated, service.name));
 });
@@ -243,6 +254,24 @@ router.post("/quotations/:id/payment-proof", requireAuth, async (req: Authentica
       isRead: false,
     });
   } catch (_e) { /* non-fatal */ }
+
+  // Send email
+  const [payer] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const totalAmt = updated.price && updated.taxAmount
+    ? parseFloat(updated.price) + parseFloat(updated.taxAmount)
+    : updated.price ? parseFloat(updated.price) : undefined;
+  if (payer) {
+    sendEmail({
+      to: payer.email,
+      subject: `Payment Proof Received — ${updated.quotationRef ?? `#${id}`}`,
+      html: emailPaymentProofReceived({
+        name: payer.fullName,
+        ref: updated.quotationRef ?? `#${id}`,
+        service: service?.name ?? "Service",
+        amount: totalAmt,
+      }),
+    }).catch(() => {});
+  }
 
   res.json(formatQuotation(updated, service?.name ?? "Unknown"));
 });
