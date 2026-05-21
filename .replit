@@ -49,7 +49,7 @@ args = "cd artifacts/kynaz && PORT=8080 BASE_PATH=/ pnpm run dev"
 waitForPort = 8080
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
 
 [postMerge]
@@ -78,4 +78,3 @@ SMTP_USER = "admin@kynazenteprise.my"
 SMTP_FROM = "admin@kynazenteprise.my"
 SMTP_HOST = "smtp.hostinger.com"
 SMTP_PORT = "465"
-SMTP_PASS = "Raisyajj@9900"
