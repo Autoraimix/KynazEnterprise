@@ -74,7 +74,7 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-SMTP_USER = "admin@kynazenteprise.my"
-SMTP_FROM = "admin@kynazenteprise.my"
+SMTP_USER = "admin@kynazenterprise.my"
+SMTP_FROM = "admin@kynazenterprise.my"
 SMTP_HOST = "smtp.hostinger.com"
 SMTP_PORT = "465"
