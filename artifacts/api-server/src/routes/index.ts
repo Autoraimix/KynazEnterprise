@@ -8,6 +8,8 @@ import referralsRouter from "./referrals";
 import dashboardRouter from "./dashboard";
 import adminRouter from "./admin";
 import agentsRouter from "./agents";
+import superadminRouter from "./superadmin";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(referralsRouter);
 router.use(dashboardRouter);
 router.use(adminRouter);
 router.use(agentsRouter);
+router.use(superadminRouter);
+router.use(analyticsRouter);
 
 export default router;

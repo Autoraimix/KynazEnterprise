@@ -52,3 +52,17 @@ export async function requireAdmin(
     next();
   });
 }
+
+export async function requireSuperAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  await requireAuth(req, res, async () => {
+    if (req.userRole !== "superadmin") {
+      res.status(403).json({ error: "Forbidden: Super Admin access required" });
+      return;
+    }
+    next();
+  });
+}

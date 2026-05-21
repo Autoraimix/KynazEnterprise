@@ -11,6 +11,9 @@ import {
   LogOut,
   Trophy,
   Megaphone,
+  BarChart3,
+  ShieldCheck,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +34,7 @@ export function Sidebar({ userRole }: { userRole: string }) {
   const [, setLocation] = useWouterLocation();
   const { logout } = useAuth();
   const isAdmin = userRole === "admin" || userRole === "superadmin";
+  const isSuperAdmin = userRole === "superadmin";
   const isAgent = userRole === "agent";
 
   const handleLogout = () => {
@@ -53,7 +57,12 @@ export function Sidebar({ userRole }: { userRole: string }) {
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/agents", label: "Agents", icon: Megaphone },
     { href: "/admin/cashback", label: "Cashback Mgt", icon: Wallet },
+    { href: "/admin/infographics", label: "Infographics", icon: BarChart3 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
+    ...(isSuperAdmin ? [
+      { href: "/superadmin", label: "Super Admin", icon: ShieldCheck },
+      { href: "/superadmin/users", label: "Manage Users", icon: UserCog },
+    ] : []),
   ];
 
   const agentLinks = [
@@ -67,7 +76,7 @@ export function Sidebar({ userRole }: { userRole: string }) {
   ];
 
   const links = isAdmin ? adminLinks : isAgent ? agentLinks : customerLinks;
-  const portalLabel = isAdmin ? "Admin Portal" : isAgent ? "Agent Portal" : "Portal";
+  const portalLabel = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin Portal" : isAgent ? "Agent Portal" : "Portal";
 
   return (
     <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground">
@@ -82,10 +91,11 @@ export function Sidebar({ userRole }: { userRole: string }) {
         </Link>
       </div>
 
-      <div className="flex-1 px-4 space-y-2 py-4">
+      <div className="flex-1 px-4 space-y-1 py-4 overflow-y-auto">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location === link.href || (location.startsWith(link.href + "/") && link.href !== "/dashboard" && link.href !== "/admin");
+          const isActive = location === link.href || (location.startsWith(link.href + "/") && link.href !== "/dashboard" && link.href !== "/admin" && link.href !== "/superadmin");
+          const isSuperAdminLink = link.href.startsWith("/superadmin");
           return (
             <Link
               key={link.href}
@@ -93,6 +103,8 @@ export function Sidebar({ userRole }: { userRole: string }) {
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : isSuperAdminLink
+                  ? "text-amber-400/80 hover:text-amber-400 hover:bg-sidebar-accent"
                   : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
               }`}
             >

@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { IdleWarningBanner } from "@/components/IdleWarningBanner";
 import NotFound from "@/pages/not-found";
 
 import Home from "@/pages/public/Home";
@@ -34,12 +35,16 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminCashback from "@/pages/admin/AdminCashback";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminAgents from "@/pages/admin/AdminAgents";
+import AdminInfographics from "@/pages/admin/AdminInfographics";
 
 import AgentDashboard from "@/pages/agent/AgentDashboard";
 import AgentCustomers from "@/pages/agent/AgentCustomers";
 import AgentQuotations from "@/pages/agent/AgentQuotations";
 import AgentRanking from "@/pages/agent/AgentRanking";
 import AgentCommissions from "@/pages/agent/AgentCommissions";
+
+import SuperAdminDashboard from "@/pages/superadmin/SuperAdminDashboard";
+import SuperAdminUsers from "@/pages/superadmin/SuperAdminUsers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +90,11 @@ function Router() {
       <Route path="/admin/cashback" component={AdminCashback} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/agents" component={AdminAgents} />
+      <Route path="/admin/infographics" component={AdminInfographics} />
+
+      {/* Super Admin routes */}
+      <Route path="/superadmin" component={SuperAdminDashboard} />
+      <Route path="/superadmin/users" component={SuperAdminUsers} />
 
       {/* Agent routes */}
       <Route path="/agent" component={AgentDashboard} />
@@ -106,6 +116,7 @@ function App() {
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
+              <IdleWarningBanner />
             </WouterRouter>
             <Toaster />
           </TooltipProvider>

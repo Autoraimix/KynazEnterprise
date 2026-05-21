@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { ArrowRight, Car, Plane, Users, Home as HomeIcon, Shield, HardHat, Briefcase, Stethoscope, Heart, CreditCard, CheckCircle2, FileSearch } from "lucide-react";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-const bannerBg = "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070&auto=format&fit=crop";
+const bannerBg = "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop";
 
 const services = [
   { id: "road-tax-renewal", name: "Road Tax Renewal", icon: Car, desc: "Quick and hassle-free road tax renewal services." },
