@@ -1,0 +1,548 @@
+Product Requirements Document (PRD)
+Project Title
+
+Kynaz Enterprise Integrated Service & Cashback Portal
+
+1. Project Overview
+Purpose
+
+The purpose of this project is to develop a centralized web platform for Kynaz Enterprise that allows customers to:
+
+Request quotations
+Purchase and renew services
+Track submissions
+Receive cashback rewards
+Manage policies and renewals
+Communicate with admin via website, WhatsApp, and email
+
+The system will also provide an advanced admin portal for managing customers, quotations, services, cashback, and notifications.
+
+2. Business Objectives
+Primary Objectives
+Digitize customer service process
+Increase customer retention using cashback rewards
+Automate quotation workflow
+Improve customer trust and convenience
+Centralize document and submission management
+Increase recurring renewals
+Reduce manual admin work
+3. Target Users
+3.1 Admin
+
+Internal staff of Kynaz Enterprise responsible for:
+
+Managing quotations
+Uploading documents
+Managing cashback
+Handling customer requests
+Sending notifications
+3.2 Registered Customers
+
+Customers who register accounts to:
+
+Request quotations
+Receive cashback
+Track submissions
+Store personal records
+Receive reminders
+3.3 Guest Users
+
+Visitors without accounts who:
+
+Can browse services
+Can request quotations
+Cannot receive cashback rewards
+4. Services Offered
+
+The platform shall support:
+
+Road Tax Renewal
+Travel Insurance/Takaful
+Foreign Worker Insurance (IG & SPIKPA)
+Home & Household Protection
+Natural disasters
+Fire
+Theft
+Public Liability Insurance
+Contractor All Risks
+Workmen Compensation
+Medical Malpractice
+General Takaful Services
+Hibah & Medical Card (PruBSN Takaful)
+5. Core Features
+5.1 Public Website
+Homepage
+
+The homepage shall contain:
+
+Hero banner
+Service overview
+Cashback membership promotion
+WhatsApp quick contact
+Customer testimonials
+FAQ
+Contact information
+Service Pages
+
+Each service page shall include:
+
+Service explanation
+Benefits
+Required documents
+Request quotation form
+CTA buttons
+About Us
+
+Display:
+
+Company background
+Vision & mission
+Certifications
+Contact details
+Contact Page
+
+Include:
+
+Contact form
+WhatsApp button
+Google Maps location
+Email details
+5.2 Authentication System
+Registration
+
+Users can register using:
+
+Full name
+Email
+Phone number
+Password
+
+Optional:
+
+Referral code
+Login
+
+Users can:
+
+Login securely
+Reset password
+Verify email
+5.3 Cashback Membership System
+Cashback Eligibility
+
+Only registered users are eligible for cashback rewards.
+
+Guest users:
+
+Can use services
+Cannot earn cashback
+Cashback Wallet
+
+Users shall have:
+
+Cashback balance
+Cashback history
+Redemption history
+Cashback Rules
+
+Admin can configure cashback for:
+
+Road tax
+Travel insurance
+Foreign worker services
+Referrals
+Promotions
+Cashback Usage
+
+Cashback can be used for:
+
+Discounts
+Future renewals
+Selected services
+5.4 Quotation System
+Customer Quotation Request
+
+Users can:
+
+Select service
+Fill quotation form
+Upload required documents
+Submit request
+Quotation Waiting Time Feature
+
+The system shall include a configurable quotation mode.
+
+Admin Toggle Button
+
+Admin portal shall have:
+
+ON/OFF quotation speed control
+If Toggle = ON
+
+Customers shall see:
+
+“Quotation will be generated within 10–15 minutes.”
+
+System behavior:
+
+Fast-track quotation workflow
+Higher priority processing
+If Toggle = OFF
+
+Customers shall see:
+
+“Quotation will be provided within 24 hours.”
+
+System behavior:
+
+Standard processing workflow
+Quotation Status Tracking
+
+Users can view:
+
+Pending
+Processing
+Quotation Ready
+Approved
+Rejected
+Admin Upload Quotation
+
+Admin shall:
+
+Upload quotation PDF/image/document
+Add remarks
+Update quotation status
+Customer Notification After Upload
+
+Once quotation is uploaded:
+
+User receives email notification
+User receives WhatsApp notification
+User can view quotation inside dashboard
+Quotation Expiry
+
+Admin can configure:
+
+Expiry date/time
+Expired quotation status
+5.5 Customer Dashboard
+
+Users shall have access to:
+
+Dashboard Overview
+
+Display:
+
+Cashback balance
+Active policies
+Recent submissions
+Renewal reminders
+Notifications
+My Services
+
+Users can:
+
+View active services
+View service history
+Download documents
+My Quotations
+
+Users can:
+
+View quotation status
+Download quotations
+Accept quotations
+Document Storage
+
+Users can upload/store:
+
+IC
+Passport
+Vehicle grant
+Insurance documents
+Vehicle Management
+
+Users can save:
+
+Vehicle number
+Road tax expiry
+Insurance expiry
+Foreign Worker Management
+
+Users can save:
+
+Worker details
+Passport expiry
+Insurance expiry
+SPIKPA records
+5.6 Admin Portal
+Dashboard
+
+Display:
+
+Total users
+Total quotations
+Pending requests
+Revenue analytics
+Cashback usage
+Service performance
+User Management
+
+Admin can:
+
+View users
+Edit users
+Suspend users
+View transaction history
+Quotation Management
+
+Admin can:
+
+View requests
+Upload quotations
+Update statuses
+Add remarks
+Cashback Management
+
+Admin can:
+
+Add cashback
+Deduct cashback
+Configure cashback percentages
+View cashback logs
+Notification Management
+
+Admin can:
+
+Send announcements
+Trigger WhatsApp notifications
+Trigger email notifications
+Content Management
+
+Admin can:
+
+Update homepage banners
+Edit services
+Add promotions
+Update FAQs
+Referral System Management
+
+Admin can:
+
+View referrals
+Configure referral rewards
+Track referral usage
+5.7 Notification System
+Email Notifications
+
+System shall send emails for:
+
+Registration
+Quotation ready
+Cashback received
+Renewal reminders
+WhatsApp Notifications
+
+System shall send WhatsApp messages for:
+
+Quotation updates
+Service reminders
+Promotions
+Payment confirmation
+5.8 Renewal Reminder System
+
+Users shall receive reminders:
+
+30 days before expiry
+14 days before expiry
+7 days before expiry
+
+Applicable for:
+
+Road tax
+Insurance
+Foreign worker documents
+5.9 Referral System
+
+Users can:
+
+Share referral code
+Invite friends
+
+Rewards:
+
+Cashback
+Discounts
+Promotional rewards
+5.10 AI-Assisted Quotation Estimation
+
+The system may include:
+
+Preliminary quotation estimation
+Service recommendation
+Auto form assistance
+
+Final quotation remains admin-controlled.
+
+5.11 Analytics & Reporting
+
+Admin shall view:
+
+Monthly sales
+User registrations
+Cashback statistics
+Popular services
+Quotation conversion rate
+6. User Roles
+Role	Permissions
+Guest	Browse website, request quotation
+Registered User	Cashback, dashboard, tracking
+Admin	Full management access
+Super Admin	System configuration & control
+7. Functional Requirements
+Authentication
+Secure login
+Password hashing
+Session management
+File Upload
+
+Support:
+
+PDF
+JPG
+PNG
+DOCX
+Search & Filtering
+
+Admin can filter:
+
+Customers
+Quotations
+Services
+Cashback transactions
+Responsive Design
+
+System must support:
+
+Desktop
+Tablet
+Mobile
+8. Non-Functional Requirements
+Performance
+Fast page loading
+Optimized database queries
+Security
+SSL encryption
+Secure authentication
+Role-based access control
+File validation
+Scalability
+
+System should support:
+
+Future mobile app
+Increased customer traffic
+Additional services
+Reliability
+Daily backups
+Error logging
+Recovery procedures
+9. Suggested Technical Architecture
+Frontend
+Modern responsive web application
+Backend
+REST API architecture
+Database
+Relational database management system
+Integrations
+WhatsApp API
+Email service provider
+Payment gateway
+Cloud storage
+10. Suggested Database Modules
+Core Tables
+users
+services
+quotations
+cashback_wallet
+cashback_transactions
+notifications
+referrals
+vehicles
+workers
+uploaded_documents
+11. Future Enhancements
+Mobile Application
+
+Android & iOS applications.
+
+Online Payment Gateway
+
+Enable:
+
+FPX
+Credit card
+E-wallet payments
+Live Chat
+
+Integrated customer support system.
+
+Multi-Agent Support
+
+Support multiple staff/admin users.
+
+Digital Signature
+
+Customers can approve quotations digitally.
+
+12. UI/UX Direction
+Design Style
+Corporate
+Modern fintech
+Clean and trustworthy
+Suggested Colors
+Dark blue
+White
+Emerald green
+Gold accent
+13. Success Metrics
+
+Project success shall be measured by:
+
+Increased registrations
+Increased recurring renewals
+Cashback engagement
+Faster quotation handling
+Customer retention rate
+Reduction in manual admin work
+14. MVP (Minimum Viable Product)
+Phase 1
+Public website
+Login/register
+Cashback system
+Quotation request
+Admin quotation upload
+Email notifications
+WhatsApp notifications
+Dashboard
+Referral system
+Phase 2
+Foreign worker management
+Analytics
+Advanced reminders
+AI-assisted estimation
+Phase 3
+Payment gateway
+Mobile application
+Advanced automation
+Multi-admin support
+15. Conclusion
+
+The Kynaz Enterprise Integrated Service Portal aims to become a centralized digital ecosystem for insurance, takaful, road tax, foreign worker management, and cashback-driven customer retention.
+
+The platform is designed to:
+
+Simplify service management
+Improve operational efficiency
+Increase customer loyalty
+Enable scalable digital growth for Kynaz Enterprise.

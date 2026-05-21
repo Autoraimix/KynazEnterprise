@@ -1,0 +1,1043 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Kynaz Enterprise Integrated Service & Cashback Portal API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: services
+    description: Service catalog
+  - name: quotations
+    description: Quotation management
+  - name: cashback
+    description: Cashback wallet and transactions
+  - name: referrals
+    description: Referral system
+  - name: dashboard
+    description: Customer dashboard
+  - name: admin
+    description: Admin operations
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          description: Validation error
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # SERVICES
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List all services
+      responses:
+        "200":
+          description: Service list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    get:
+      operationId: getService
+      tags: [services]
+      summary: Get service by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Service detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Not found
+
+  # QUOTATIONS
+  /quotations:
+    get:
+      operationId: listQuotations
+      tags: [quotations]
+      summary: List customer's quotations
+      responses:
+        "200":
+          description: Quotation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quotation"
+    post:
+      operationId: createQuotation
+      tags: [quotations]
+      summary: Create quotation request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuotationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quotation"
+
+  /quotations/{id}:
+    get:
+      operationId: getQuotation
+      tags: [quotations]
+      summary: Get quotation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quotation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quotation"
+        "404":
+          description: Not found
+
+  /quotations/{id}/accept:
+    post:
+      operationId: acceptQuotation
+      tags: [quotations]
+      summary: Accept a quotation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quotation"
+
+  # CASHBACK
+  /cashback/wallet:
+    get:
+      operationId: getCashbackWallet
+      tags: [cashback]
+      summary: Get cashback wallet balance and summary
+      responses:
+        "200":
+          description: Wallet data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashbackWallet"
+
+  /cashback/transactions:
+    get:
+      operationId: listCashbackTransactions
+      tags: [cashback]
+      summary: List cashback transactions
+      responses:
+        "200":
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CashbackTransaction"
+
+  # REFERRALS
+  /referrals/my-code:
+    get:
+      operationId: getMyReferralCode
+      tags: [referrals]
+      summary: Get current user's referral code
+      responses:
+        "200":
+          description: Referral code info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralCode"
+
+  /referrals:
+    get:
+      operationId: listReferrals
+      tags: [referrals]
+      summary: List referrals made by current user
+      responses:
+        "200":
+          description: Referral list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Referral"
+
+  # DASHBOARD
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get customer dashboard overview
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/notifications:
+    get:
+      operationId: listNotifications
+      tags: [dashboard]
+      summary: List customer notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /dashboard/notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [dashboard]
+      summary: Mark notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ADMIN
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Admin dashboard statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users (admin)
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      tags: [admin]
+      summary: Get user detail (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update user (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/users/{id}/suspend:
+    post:
+      operationId: suspendUser
+      tags: [admin]
+      summary: Suspend or unsuspend user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspendUserInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/quotations:
+    get:
+      operationId: listAdminQuotations
+      tags: [admin]
+      summary: List all quotations (admin)
+      responses:
+        "200":
+          description: Quotation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quotation"
+
+  /admin/quotations/{id}:
+    patch:
+      operationId: updateAdminQuotation
+      tags: [admin]
+      summary: Update quotation status / upload document (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuotationUpdate"
+      responses:
+        "200":
+          description: Updated quotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quotation"
+
+  /admin/cashback:
+    get:
+      operationId: listAdminCashback
+      tags: [admin]
+      summary: List all cashback transactions (admin)
+      responses:
+        "200":
+          description: Cashback logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CashbackTransaction"
+    post:
+      operationId: addCashback
+      tags: [admin]
+      summary: Add or deduct cashback for a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashbackAdjustInput"
+      responses:
+        "201":
+          description: Adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashbackTransaction"
+
+  /admin/settings/quotation-speed:
+    get:
+      operationId: getQuotationSpeedSetting
+      tags: [admin]
+      summary: Get current quotation speed toggle
+      responses:
+        "200":
+          description: Setting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotationSpeedSetting"
+    post:
+      operationId: setQuotationSpeed
+      tags: [admin]
+      summary: Toggle quotation speed (fast/standard)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuotationSpeedInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotationSpeedSetting"
+
+  /admin/testimonials:
+    get:
+      operationId: listTestimonials
+      tags: [admin]
+      summary: List testimonials
+      responses:
+        "200":
+          description: Testimonials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Testimonial"
+
+  /testimonials:
+    get:
+      operationId: getPublicTestimonials
+      tags: [services]
+      summary: Get public testimonials for homepage
+      responses:
+        "200":
+          description: Testimonials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Testimonial"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    AuthResult:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [guest, customer, admin, superadmin]
+        referralCode:
+          type: string
+        cashbackBalance:
+          type: number
+        isVerified:
+          type: boolean
+        isSuspended:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - fullName
+        - email
+        - phone
+        - role
+        - referralCode
+        - cashbackBalance
+        - isVerified
+        - isSuspended
+        - createdAt
+
+    RegisterInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        referralCode:
+          type: ["string", "null"]
+      required:
+        - fullName
+        - email
+        - phone
+        - password
+
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    ResetPasswordInput:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+
+    UserUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+
+    SuspendUserInput:
+      type: object
+      properties:
+        suspended:
+          type: boolean
+      required:
+        - suspended
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        benefits:
+          type: array
+          items:
+            type: string
+        requiredDocuments:
+          type: array
+          items:
+            type: string
+        icon:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - id
+        - name
+        - slug
+        - category
+        - description
+        - benefits
+        - requiredDocuments
+        - icon
+        - isActive
+
+    Quotation:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        serviceId:
+          type: integer
+        serviceName:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, ready, approved, rejected, expired]
+        formData:
+          type: object
+          additionalProperties: true
+        remarks:
+          type: ["string", "null"]
+        documentUrl:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        customerName:
+          type: ["string", "null"]
+        customerEmail:
+          type: ["string", "null"]
+      required:
+        - id
+        - userId
+        - serviceId
+        - serviceName
+        - status
+        - formData
+        - createdAt
+        - updatedAt
+
+    QuotationInput:
+      type: object
+      properties:
+        serviceId:
+          type: integer
+        formData:
+          type: object
+          additionalProperties: true
+      required:
+        - serviceId
+        - formData
+
+    QuotationUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, processing, ready, approved, rejected, expired]
+        remarks:
+          type: string
+        documentUrl:
+          type: string
+        expiresAt:
+          type: string
+
+    CashbackWallet:
+      type: object
+      properties:
+        balance:
+          type: number
+        totalEarned:
+          type: number
+        totalRedeemed:
+          type: number
+        pendingAmount:
+          type: number
+      required:
+        - balance
+        - totalEarned
+        - totalRedeemed
+        - pendingAmount
+
+    CashbackTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [earned, redeemed, adjusted, referral, promotion]
+        amount:
+          type: number
+        description:
+          type: string
+        referenceId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        userName:
+          type: ["string", "null"]
+      required:
+        - id
+        - userId
+        - type
+        - amount
+        - description
+        - createdAt
+
+    CashbackAdjustInput:
+      type: object
+      properties:
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [earned, redeemed, adjusted, promotion]
+        amount:
+          type: number
+        description:
+          type: string
+      required:
+        - userId
+        - type
+        - amount
+        - description
+
+    ReferralCode:
+      type: object
+      properties:
+        code:
+          type: string
+        totalReferrals:
+          type: integer
+        totalEarned:
+          type: number
+      required:
+        - code
+        - totalReferrals
+        - totalEarned
+
+    Referral:
+      type: object
+      properties:
+        id:
+          type: integer
+        referredUserId:
+          type: integer
+        referredUserName:
+          type: string
+        cashbackEarned:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - referredUserId
+        - referredUserName
+        - cashbackEarned
+        - createdAt
+
+    DashboardSummary:
+      type: object
+      properties:
+        cashbackBalance:
+          type: number
+        activePolicies:
+          type: integer
+        pendingQuotations:
+          type: integer
+        totalQuotations:
+          type: integer
+        recentQuotations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quotation"
+        upcomingRenewals:
+          type: array
+          items:
+            $ref: "#/components/schemas/RenewalReminder"
+        unreadNotifications:
+          type: integer
+      required:
+        - cashbackBalance
+        - activePolicies
+        - pendingQuotations
+        - totalQuotations
+        - recentQuotations
+        - upcomingRenewals
+        - unreadNotifications
+
+    RenewalReminder:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        label:
+          type: string
+        expiresAt:
+          type: string
+        daysLeft:
+          type: integer
+      required:
+        - id
+        - type
+        - label
+        - expiresAt
+        - daysLeft
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [quotation, cashback, renewal, announcement, system]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - message
+        - type
+        - isRead
+        - createdAt
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalQuotations:
+          type: integer
+        pendingQuotations:
+          type: integer
+        totalCashbackIssued:
+          type: number
+        activeServices:
+          type: integer
+        quotationsByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        recentQuotations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quotation"
+        newUsersThisMonth:
+          type: integer
+      required:
+        - totalUsers
+        - totalQuotations
+        - pendingQuotations
+        - totalCashbackIssued
+        - activeServices
+        - quotationsByStatus
+        - recentQuotations
+        - newUsersThisMonth
+
+    QuotationSpeedSetting:
+      type: object
+      properties:
+        fastMode:
+          type: boolean
+        message:
+          type: string
+      required:
+        - fastMode
+        - message
+
+    QuotationSpeedInput:
+      type: object
+      properties:
+        fastMode:
+          type: boolean
+      required:
+        - fastMode
+
+    Testimonial:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        role:
+          type: string
+        content:
+          type: string
+        rating:
+          type: integer
+        isActive:
+          type: boolean
+      required:
+        - id
+        - customerName
+        - role
+        - content
+        - rating
+        - isActive
