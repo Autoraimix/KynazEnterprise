@@ -56,6 +56,7 @@ export function Sidebar({ userRole }: { userRole: string }) {
     { href: "/admin/quotations", label: "Quotations", icon: FileText },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/agents", label: "Agents", icon: Megaphone },
+    { href: "/admin/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/admin/cashback", label: "Cashback Mgt", icon: Wallet },
     { href: "/admin/infographics", label: "Infographics", icon: BarChart3 },
     { href: "/admin/settings", label: "Settings", icon: Settings },

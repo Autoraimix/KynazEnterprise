@@ -25,10 +25,10 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden py-24 lg:py-32">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-20"
+          className="absolute inset-0 bg-cover bg-center opacity-40"
           style={{ backgroundImage: `url(${bannerBg})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/70 to-primary/50" />
         <div className="container mx-auto px-4 relative z-10 flex flex-col items-center text-center">
           <motion.div
             initial={{ opacity: 0, y: -10 }}

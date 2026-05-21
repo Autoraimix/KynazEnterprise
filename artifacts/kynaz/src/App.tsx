@@ -36,6 +36,7 @@ import AdminCashback from "@/pages/admin/AdminCashback";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminAgents from "@/pages/admin/AdminAgents";
 import AdminInfographics from "@/pages/admin/AdminInfographics";
+import AdminLeaderboard from "@/pages/admin/AdminLeaderboard";
 
 import AgentDashboard from "@/pages/agent/AgentDashboard";
 import AgentCustomers from "@/pages/agent/AgentCustomers";
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/admin/cashback" component={AdminCashback} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/agents" component={AdminAgents} />
+      <Route path="/admin/leaderboard" component={AdminLeaderboard} />
       <Route path="/admin/infographics" component={AdminInfographics} />
 
       {/* Super Admin routes */}

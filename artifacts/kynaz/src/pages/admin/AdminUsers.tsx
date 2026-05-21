@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Search, Shield, ShieldOff, CheckCircle2, XCircle, Pencil, X, Save } from "lucide-react";
+import { Users, Search, Shield, ShieldOff, CheckCircle2, XCircle, Pencil, X, Save, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -20,6 +20,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { User } from "@workspace/api-client-react";
+
+const PAGE_SIZE = 10;
 
 const editSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
@@ -35,6 +37,7 @@ export default function AdminUsers() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const filtered = users?.filter(u =>
@@ -42,6 +45,11 @@ export default function AdminUsers() {
     u.fullName.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   ) ?? [];
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const handleSearch = (v: string) => { setSearch(v); setPage(0); };
 
   const form = useForm<EditData>({
     resolver: zodResolver(editSchema),
@@ -101,7 +109,7 @@ export default function AdminUsers() {
             placeholder="Search users by name or email..."
             className="pl-9"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => handleSearch(e.target.value)}
           />
         </div>
 
@@ -113,81 +121,98 @@ export default function AdminUsers() {
             <p className="text-muted-foreground">No users found.</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((user, i) => (
-              <motion.div key={user.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <div
-                  data-testid={`row-user-${user.id}`}
-                  className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
-                      {user.fullName.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-foreground text-sm flex items-center gap-2 flex-wrap">
-                        {user.fullName}
-                        {user.role !== "customer" && (
-                          <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize">{user.role}</span>
-                        )}
-                        {user.isSuspended && (
-                          <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Suspended</span>
-                        )}
+          <>
+            <div className="space-y-2">
+              {paginated.map((user, i) => (
+                <motion.div key={user.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                  <div
+                    data-testid={`row-user-${user.id}`}
+                    className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+                        {user.fullName.charAt(0)}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">{user.email} · {user.phone}</div>
-                      <div className="flex items-center gap-3 mt-1 flex-wrap">
-                        <span className="text-xs text-muted-foreground">Cashback: RM {user.cashbackBalance.toFixed(2)}</span>
-                        {user.isVerified ? (
-                          <span className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 size={11} /> Verified</span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-xs text-amber-600"><XCircle size={11} /> Unverified</span>
-                        )}
+                      <div className="min-w-0">
+                        <div className="font-semibold text-foreground text-sm flex items-center gap-2 flex-wrap">
+                          {user.fullName}
+                          {user.role !== "customer" && (
+                            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded capitalize">{user.role}</span>
+                          )}
+                          {user.isSuspended && (
+                            <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Suspended</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">{user.email} · {user.phone}</div>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground">Cashback: RM {user.cashbackBalance.toFixed(2)}</span>
+                          {user.isVerified ? (
+                            <span className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 size={11} /> Verified</span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs text-amber-600"><XCircle size={11} /> Unverified</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Edit button */}
-                    <Button
-                      data-testid={`button-edit-${user.id}`}
-                      size="sm"
-                      variant="outline"
-                      className="text-primary border-primary/20 hover:bg-primary hover:text-white gap-1.5 h-8"
-                      onClick={() => openEdit(user)}
-                    >
-                      <Pencil size={13} /> Edit
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        data-testid={`button-edit-${user.id}`}
+                        size="sm"
+                        variant="outline"
+                        className="text-primary border-primary/20 hover:bg-primary hover:text-white gap-1.5 h-8"
+                        onClick={() => openEdit(user)}
+                      >
+                        <Pencil size={13} /> Edit
+                      </Button>
 
-                    {/* Suspend/Reactivate */}
-                    {user.role !== "customer" ? (
-                      <span className="text-xs text-muted-foreground">Protected</span>
-                    ) : user.isSuspended ? (
-                      <Button
-                        data-testid={`button-unsuspend-${user.id}`}
-                        size="sm"
-                        variant="outline"
-                        className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 gap-1.5 h-8"
-                        onClick={() => handleToggleSuspend(user.id, user.fullName, true)}
-                        disabled={suspendMutation.isPending}
-                      >
-                        <Shield size={14} /> Reactivate
-                      </Button>
-                    ) : (
-                      <Button
-                        data-testid={`button-suspend-${user.id}`}
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50 gap-1.5 h-8"
-                        onClick={() => handleToggleSuspend(user.id, user.fullName, false)}
-                        disabled={suspendMutation.isPending}
-                      >
-                        <ShieldOff size={14} /> Suspend
-                      </Button>
-                    )}
+                      {user.role !== "customer" ? (
+                        <span className="text-xs text-muted-foreground">Protected</span>
+                      ) : user.isSuspended ? (
+                        <Button
+                          data-testid={`button-unsuspend-${user.id}`}
+                          size="sm"
+                          variant="outline"
+                          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 gap-1.5 h-8"
+                          onClick={() => handleToggleSuspend(user.id, user.fullName, true)}
+                          disabled={suspendMutation.isPending}
+                        >
+                          <Shield size={14} /> Reactivate
+                        </Button>
+                      ) : (
+                        <Button
+                          data-testid={`button-suspend-${user.id}`}
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50 gap-1.5 h-8"
+                          onClick={() => handleToggleSuspend(user.id, user.fullName, false)}
+                          disabled={suspendMutation.isPending}
+                        >
+                          <ShieldOff size={14} /> Suspend
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length} users
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+                    <ChevronLeft size={16} /> Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+                    Next <ChevronRight size={16} />
+                  </Button>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

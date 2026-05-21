@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc, and } from "drizzle-orm";
 import {
   db, usersTable, agentsTable, commissionsTable, quotationsTable,
-  servicesTable, notificationsTable, agentBroadcastsTable
+  servicesTable, notificationsTable, agentBroadcastsTable, settingsTable
 } from "@workspace/db";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
 import { sendEmail, emailAgentWelcome } from "../lib/email";
@@ -186,24 +186,35 @@ router.get("/agents/commissions", requireAgent, async (req: AuthenticatedRequest
 
 // ── Get leaderboard ────────────────────────────────────────────────────────────
 router.get("/agents/leaderboard", requireAuth, async (_req, res): Promise<void> => {
-  const agents = await db.select().from(agentsTable)
-    .where(eq(agentsTable.status, "active"))
-    .orderBy(desc(agentsTable.points));
-
-  const userIds = agents.map(a => a.userId);
+  const agents = await db.select().from(agentsTable).where(eq(agentsTable.status, "active"));
   const users = await db.select().from(usersTable);
   const userMap = new Map(users.map(u => [u.id, u]));
+  const quotations = await db.select().from(quotationsTable);
 
-  res.json(agents.map((a, idx) => ({
-    rank: idx + 1,
-    agentId: a.agentId,
-    name: userMap.get(a.userId)?.fullName ?? "Unknown",
-    badge: a.badge,
-    points: a.points,
-    totalSales: a.totalSales,
-    totalCustomers: a.totalCustomers,
-    totalCommission: parseFloat(a.totalCommission),
-  })));
+  // Sort: badge weight desc → totalSales desc → points desc
+  const sorted = [...agents].sort((a, b) => {
+    const bwDiff = (BADGE_WEIGHT[b.badge] ?? 0) - (BADGE_WEIGHT[a.badge] ?? 0);
+    if (bwDiff !== 0) return bwDiff;
+    if (b.totalSales !== a.totalSales) return b.totalSales - a.totalSales;
+    return b.points - a.points;
+  });
+
+  res.json(sorted.map((a, idx) => {
+    const paidQ = quotations.filter(q => q.userId === a.userId && q.status === "paid");
+    const totalSalesValue = paidQ.reduce((s, q) => s + (q.price ? parseFloat(q.price) : 0), 0);
+    return {
+      rank: idx + 1,
+      agentId: a.agentId,
+      name: userMap.get(a.userId)?.fullName ?? "Unknown",
+      badge: a.badge,
+      badgeWeight: BADGE_WEIGHT[a.badge] ?? 0,
+      points: a.points,
+      totalSales: a.totalSales,
+      totalSalesValue: parseFloat(totalSalesValue.toFixed(2)),
+      totalCustomers: a.totalCustomers,
+      totalCommission: parseFloat(a.totalCommission),
+    };
+  }));
 });
 
 // ── Get broadcasts ─────────────────────────────────────────────────────────────
@@ -218,46 +229,120 @@ router.get("/agents/broadcasts", requireAgent, async (_req, res): Promise<void> 
 //  ADMIN — Agent management endpoints
 // ══════════════════════════════════════════════════════════════════════════════
 
+const BADGE_WEIGHT: Record<string, number> = { bronze: 1, silver: 2, gold: 3, platinum: 4, elite: 5 };
+
+const DEFAULT_BADGE_CRITERIA = {
+  bronze:   { minSales: 8,  minValue: 10000 },
+  silver:   { minSales: 12, minValue: 10000 },
+  gold:     { minSales: 16, minValue: 15000 },
+  platinum: { minSales: 20, minValue: 20000 },
+};
+const DEFAULT_POINTS_PER_SALE = 10;
+
+async function getBadgeCriteria() {
+  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "badge_criteria"));
+  if (row) {
+    try { return JSON.parse(row.value) as typeof DEFAULT_BADGE_CRITERIA; } catch {}
+  }
+  return DEFAULT_BADGE_CRITERIA;
+}
+
+async function getPointsPerSale(): Promise<number> {
+  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.key, "points_per_sale"));
+  return row ? parseFloat(row.value) : DEFAULT_POINTS_PER_SALE;
+}
+
+// Get badge criteria settings
+router.get("/admin/agents/badge-criteria", requireAdmin, async (_req, res): Promise<void> => {
+  const criteria = await getBadgeCriteria();
+  const pointsPerSale = await getPointsPerSale();
+  res.json({ criteria, pointsPerSale });
+});
+
+// Update badge criteria settings
+router.put("/admin/agents/badge-criteria", requireAdmin, async (req, res): Promise<void> => {
+  const { criteria, pointsPerSale } = req.body as {
+    criteria: typeof DEFAULT_BADGE_CRITERIA; pointsPerSale: number;
+  };
+  if (!criteria) { res.status(400).json({ error: "criteria required" }); return; }
+
+  const criteriaJson = JSON.stringify(criteria);
+  await db.insert(settingsTable).values({ key: "badge_criteria", value: criteriaJson })
+    .onConflictDoUpdate({ target: settingsTable.key, set: { value: criteriaJson, updatedAt: new Date() } });
+
+  if (pointsPerSale != null) {
+    const pps = String(pointsPerSale);
+    await db.insert(settingsTable).values({ key: "points_per_sale", value: pps })
+      .onConflictDoUpdate({ target: settingsTable.key, set: { value: pps, updatedAt: new Date() } });
+  }
+
+  res.json({ message: "Badge criteria updated" });
+});
+
 router.get("/admin/agents", requireAdmin, async (_req, res): Promise<void> => {
-  const agents = await db.select().from(agentsTable).orderBy(desc(agentsTable.createdAt));
+  const agents = await db.select().from(agentsTable);
   const users = await db.select().from(usersTable);
+  const quotations = await db.select().from(quotationsTable);
   const userMap = new Map(users.map(u => [u.id, u]));
 
-  res.json(agents.map(a => ({
-    id: a.id,
-    agentId: a.agentId,
-    userId: a.userId,
-    status: a.status,
-    badge: a.badge,
-    points: a.points,
-    totalSales: a.totalSales,
-    totalCustomers: a.totalCustomers,
-    totalCommission: parseFloat(a.totalCommission),
-    commissionBalance: parseFloat(a.commissionBalance),
-    commissionRate: parseFloat(a.commissionRate),
-    createdAt: a.createdAt.toISOString(),
-    user: userMap.get(a.userId) ? {
-      fullName: userMap.get(a.userId)!.fullName,
-      email: userMap.get(a.userId)!.email,
-      phone: userMap.get(a.userId)!.phone,
-      referralCode: userMap.get(a.userId)!.referralCode,
-    } : null,
-  })));
+  // Sort by badge weight desc, then total sales desc, then points desc
+  const sorted = [...agents].sort((a, b) => {
+    const bwDiff = (BADGE_WEIGHT[b.badge] ?? 0) - (BADGE_WEIGHT[a.badge] ?? 0);
+    if (bwDiff !== 0) return bwDiff;
+    if (b.totalSales !== a.totalSales) return b.totalSales - a.totalSales;
+    return b.points - a.points;
+  });
+
+  res.json(sorted.map((a, idx) => {
+    const user = userMap.get(a.userId);
+    const paidQuotations = quotations.filter(q => q.userId === a.userId && q.status === "paid");
+    const totalSalesValue = paidQuotations.reduce((sum, q) => sum + (q.price ? parseFloat(q.price) : 0), 0);
+    return {
+      id: a.id,
+      agentId: a.agentId,
+      userId: a.userId,
+      status: a.status,
+      badge: a.badge,
+      points: a.points,
+      rankPosition: idx + 1,
+      totalSales: a.totalSales,
+      totalSalesValue: parseFloat(totalSalesValue.toFixed(2)),
+      totalCustomers: a.totalCustomers,
+      totalCommission: parseFloat(a.totalCommission),
+      commissionBalance: parseFloat(a.commissionBalance),
+      commissionRate: parseFloat(a.commissionRate),
+      notes: a.notes,
+      createdAt: a.createdAt.toISOString(),
+      user: user ? {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        referralCode: user.referralCode,
+      } : null,
+    };
+  }));
 });
 
 router.patch("/admin/agents/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
-  const { status, commissionRate, notes } = req.body;
+  const { status, commissionRate, notes, badge, points, fullName, phone } = req.body as {
+    status?: string; commissionRate?: string; notes?: string;
+    badge?: string; points?: number; fullName?: string; phone?: string;
+  };
+
   const updateData: Partial<typeof agentsTable.$inferInsert> = { updatedAt: new Date() };
 
   const [existing] = await db.select().from(agentsTable).where(eq(agentsTable.id, id));
   if (!existing) { res.status(404).json({ error: "Agent not found" }); return; }
 
-  if (status) updateData.status = status;
+  if (status) updateData.status = status as typeof agentsTable.$inferInsert["status"];
   if (commissionRate != null) updateData.commissionRate = parseFloat(commissionRate).toFixed(2);
   if (notes != null) updateData.notes = notes;
+  if (badge != null) updateData.badge = badge as typeof agentsTable.$inferInsert["badge"];
+  if (points != null) updateData.points = Number(points);
 
   // When approving, generate proper agent ID and update user role
   if (status === "active" && existing.status !== "active") {
@@ -265,13 +350,21 @@ router.patch("/admin/agents/:id", requireAdmin, async (req, res): Promise<void> 
     if (user) {
       const agentId = generateAgentId(user.fullName, existing.id);
       updateData.agentId = agentId;
-      await db.update(usersTable).set({ role: "agent" }).where(eq(usersTable.id, existing.userId));
+      await db.update(usersTable).set({ role: "agent", updatedAt: new Date() }).where(eq(usersTable.id, existing.userId));
       sendEmail({
         to: user.email,
         subject: "Your Kynaz Agent Account is Approved!",
         html: emailAgentWelcome({ name: user.fullName, agentId, referralCode: user.referralCode }),
       }).catch(() => {});
     }
+  }
+
+  // Update user name/phone if provided
+  if (fullName || phone) {
+    const userUpdate: Record<string, unknown> = { updatedAt: new Date() };
+    if (fullName) userUpdate.fullName = fullName;
+    if (phone) userUpdate.phone = phone;
+    await db.update(usersTable).set(userUpdate as Partial<typeof usersTable.$inferInsert>).where(eq(usersTable.id, existing.userId));
   }
 
   const [updated] = await db.update(agentsTable).set(updateData).where(eq(agentsTable.id, id)).returning();

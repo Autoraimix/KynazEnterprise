@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SuperAdminLayout } from "@/components/layout/SuperAdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { UserCog, Plus, Search, Ban, CheckCircle, Trash2, KeyRound, RefreshCw } from "lucide-react";
+import {
+  UserCog, Plus, Search, Ban, CheckCircle, Trash2, KeyRound, RefreshCw,
+  ChevronLeft, ChevronRight, Pencil, Save, X, Mail, Phone, Shield,
+} from "lucide-react";
 import { useSearch } from "wouter";
+
+const PAGE_SIZE = 10;
 
 interface SuperUser {
   id: number; fullName: string; email: string; phone: string;
@@ -37,10 +42,13 @@ export default function SuperAdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState(roleFilter);
+  const [page, setPage] = useState(0);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState<SuperUser | null>(null);
+  const [editingUser, setEditingUser] = useState<SuperUser | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [createForm, setCreateForm] = useState({ fullName: "", email: "", phone: "", password: "", role: "customer" });
+  const [editForm, setEditForm] = useState({ fullName: "", phone: "", role: "customer", isSuspended: false, isVerified: false });
 
   const token = () => localStorage.getItem("kynaz_token") ?? "";
 
@@ -56,31 +64,16 @@ export default function SuperAdminUsers() {
   useEffect(() => { fetchUsers(); }, [filterRole]);
 
   const handleSuspend = async (user: SuperUser) => {
-    const action = user.isSuspended ? "unsuspend" : "suspend";
     const res = await fetch(`/api/superadmin/users/${user.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
       body: JSON.stringify({ isSuspended: !user.isSuspended }),
     });
     if (res.ok) {
-      toast({ title: `User ${action}ed`, description: `${user.fullName} has been ${action}ed.` });
+      toast({ title: user.isSuspended ? "User unsuspended" : "User suspended" });
       fetchUsers();
     } else {
       toast({ title: "Error", description: "Failed to update user", variant: "destructive" });
-    }
-  };
-
-  const handleRoleChange = async (userId: number, role: string) => {
-    const res = await fetch(`/api/superadmin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-      body: JSON.stringify({ role }),
-    });
-    if (res.ok) {
-      toast({ title: "Role updated", description: "User role has been changed." });
-      fetchUsers();
-    } else {
-      toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
     }
   };
 
@@ -108,7 +101,7 @@ export default function SuperAdminUsers() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
       body: JSON.stringify(createForm),
     });
-    const data = await res.json() as { error?: string; id?: number };
+    const data = await res.json() as { error?: string };
     if (res.ok) {
       toast({ title: "User created", description: `${createForm.fullName} has been created.` });
       setShowCreateDialog(false);
@@ -121,7 +114,7 @@ export default function SuperAdminUsers() {
 
   const handleResetPassword = async () => {
     if (!showResetDialog || newPassword.length < 6) {
-      toast({ title: "Password too short", variant: "destructive" }); return;
+      toast({ title: "Password too short (min 6 chars)", variant: "destructive" }); return;
     }
     const res = await fetch(`/api/superadmin/users/${showResetDialog.id}/reset-password`, {
       method: "POST",
@@ -130,10 +123,31 @@ export default function SuperAdminUsers() {
     });
     if (res.ok) {
       toast({ title: "Password reset", description: `Password updated for ${showResetDialog.fullName}` });
-      setShowResetDialog(null);
-      setNewPassword("");
+      setShowResetDialog(null); setNewPassword("");
     } else {
       toast({ title: "Error", description: "Failed to reset password", variant: "destructive" });
+    }
+  };
+
+  const openEdit = (user: SuperUser) => {
+    setEditingUser(user);
+    setEditForm({ fullName: user.fullName, phone: user.phone, role: user.role, isSuspended: user.isSuspended, isVerified: user.isVerified });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    const res = await fetch(`/api/superadmin/users/${editingUser.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+      body: JSON.stringify(editForm),
+    });
+    if (res.ok) {
+      toast({ title: "User updated", description: `${editForm.fullName}'s details have been saved.` });
+      setEditingUser(null);
+      fetchUsers();
+    } else {
+      const d = await res.json() as { error?: string };
+      toast({ title: "Error", description: d.error ?? "Failed to update user", variant: "destructive" });
     }
   };
 
@@ -141,6 +155,12 @@ export default function SuperAdminUsers() {
     u.fullName.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const handleSearch = (v: string) => { setSearch(v); setPage(0); };
+  const handleRoleFilter = (v: string) => { setFilterRole(v === "all" ? "" : v); setPage(0); };
 
   return (
     <SuperAdminLayout>
@@ -150,7 +170,9 @@ export default function SuperAdminUsers() {
             <h1 className="text-2xl font-serif font-bold text-foreground flex items-center gap-2">
               <UserCog size={24} className="text-purple-500" /> Manage Users
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">Create, edit roles, suspend or delete accounts</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              {users.length} total users · click any row to edit
+            </p>
           </div>
           <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
             <Plus size={16} /> Create User
@@ -162,9 +184,9 @@ export default function SuperAdminUsers() {
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search size={16} className="absolute left-3 top-2.5 text-muted-foreground" />
-                <Input placeholder="Search by name or email…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+                <Input placeholder="Search by name or email…" className="pl-9" value={search} onChange={e => handleSearch(e.target.value)} />
               </div>
-              <Select value={filterRole || "all"} onValueChange={v => setFilterRole(v === "all" ? "" : v)}>
+              <Select value={filterRole || "all"} onValueChange={handleRoleFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
@@ -187,56 +209,146 @@ export default function SuperAdminUsers() {
             ) : filtered.length === 0 ? (
               <p className="text-center text-muted-foreground py-12">No users found.</p>
             ) : (
-              <div className="space-y-2">
-                {filtered.map((user, i) => (
-                  <motion.div key={user.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
-                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 flex-wrap">
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm shrink-0">
-                        {user.fullName.charAt(0)}
+              <>
+                <div className="space-y-2">
+                  {paginated.map((user, i) => (
+                    <motion.div key={user.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
+                      <div
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 hover:border-primary/30 flex-wrap cursor-pointer transition-colors"
+                        onClick={() => openEdit(user)}
+                      >
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm shrink-0">
+                          {user.fullName.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-foreground flex items-center gap-2 flex-wrap">
+                            {user.fullName}
+                            {user.isSuspended && <Badge variant="destructive" className="text-xs">Suspended</Badge>}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">{user.email} · {user.phone}</div>
+                        </div>
+                        <Badge className={`text-xs border ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</Badge>
+                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title="Edit" onClick={() => openEdit(user)}>
+                            <Pencil size={14} className="text-primary" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title={user.isSuspended ? "Unsuspend" : "Suspend"} onClick={() => handleSuspend(user)}>
+                            {user.isSuspended ? <CheckCircle size={15} className="text-emerald-500" /> : <Ban size={15} className="text-orange-500" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title="Reset password" onClick={() => setShowResetDialog(user)}>
+                            <KeyRound size={15} className="text-blue-500" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title="Delete" onClick={() => handleDelete(user)}>
+                            <Trash2 size={15} className="text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground truncate">{user.fullName}</div>
-                        <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-                      </div>
-                      <Badge className={`text-xs border ${ROLE_COLORS[user.role] ?? ""}`}>{user.role}</Badge>
-                      {user.isSuspended && <Badge variant="destructive" className="text-xs">Suspended</Badge>}
+                    </motion.div>
+                  ))}
+                </div>
 
-                      <Select defaultValue={user.role} onValueChange={v => handleRoleChange(user.id, v)}>
-                        <SelectTrigger className="w-32 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="superadmin">Super Admin</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="agent">Agent</SelectItem>
-                          <SelectItem value="customer">Customer</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-8 w-8" title={user.isSuspended ? "Unsuspend" : "Suspend"} onClick={() => handleSuspend(user)}>
-                          {user.isSuspended ? <CheckCircle size={15} className="text-emerald-500" /> : <Ban size={15} className="text-orange-500" />}
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8" title="Reset password" onClick={() => setShowResetDialog(user)}>
-                          <KeyRound size={15} className="text-blue-500" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8" title="Delete" onClick={() => handleDelete(user)}>
-                          <Trash2 size={15} className="text-destructive" />
-                        </Button>
-                      </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+                        <ChevronLeft size={16} /> Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
+                      <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+                        Next <ChevronRight size={16} />
+                      </Button>
                     </div>
-                  </motion.div>
-                ))}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Edit User Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={open => { if (!open) setEditingUser(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif flex items-center gap-2">
+              <Pencil size={16} className="text-primary" /> Edit User
+            </DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <div className="space-y-4 py-1">
+              <div className="bg-muted/40 rounded-lg p-3 space-y-1 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Mail size={13} /> <span className="font-medium text-foreground">{editingUser.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                  <Shield size={12} /> Referral: {editingUser.referralCode}
+                  &nbsp;·&nbsp; Cashback: RM {editingUser.cashbackBalance.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Full Name</label>
+                  <Input value={editForm.fullName} onChange={e => setEditForm(f => ({ ...f, fullName: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Phone</label>
+                  <Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+                  <Select value={editForm.role} onValueChange={v => setEditForm(f => ({ ...f, role: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="superadmin">Super Admin</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
+                      <SelectItem value="customer">Customer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-medium text-muted-foreground">Suspended</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditForm(f => ({ ...f, isSuspended: !f.isSuspended }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isSuspended ? "bg-red-500" : "bg-muted-foreground/30"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.isSuspended ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-medium text-muted-foreground">Verified</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditForm(f => ({ ...f, isVerified: !f.isVerified }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isVerified ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.isVerified ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <Button variant="outline" className="flex-1 gap-2" onClick={() => setEditingUser(null)}>
+                  <X size={15} /> Cancel
+                </Button>
+                <Button className="flex-1 gap-2 bg-primary text-white" onClick={handleSaveEdit}>
+                  <Save size={15} /> Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Create User Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Create New User</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <Input placeholder="Full Name" value={createForm.fullName} onChange={e => setCreateForm(f => ({ ...f, fullName: e.target.value }))} />
             <Input placeholder="Email" type="email" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} />
@@ -262,7 +374,7 @@ export default function SuperAdminUsers() {
       {/* Reset Password Dialog */}
       <Dialog open={!!showResetDialog} onOpenChange={open => { if (!open) { setShowResetDialog(null); setNewPassword(""); } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Reset Password — {showResetDialog?.fullName}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-serif">Reset Password — {showResetDialog?.fullName}</DialogTitle></DialogHeader>
           <div className="py-2">
             <Input placeholder="New password (min 6 chars)" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
           </div>
