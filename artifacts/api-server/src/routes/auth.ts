@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import {
   RegisterBody,
@@ -70,9 +70,22 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
     const { fullName, email, phone, password, referralCode } = parsed.data;
 
-    const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    // Check email AND phone uniqueness together in one query
+    const existing = await db
+      .select({ id: usersTable.id, email: usersTable.email, phone: usersTable.phone })
+      .from(usersTable)
+      .where(or(eq(usersTable.email, email), eq(usersTable.phone, phone)));
+
     if (existing.length > 0) {
-      res.status(400).json({ error: "Email already registered" });
+      const emailTaken = existing.some(u => u.email === email);
+      const phoneTaken = existing.some(u => u.phone === phone);
+      if (emailTaken && phoneTaken) {
+        res.status(400).json({ error: "Email and phone number are already registered" });
+      } else if (emailTaken) {
+        res.status(400).json({ error: "This email address is already registered" });
+      } else {
+        res.status(400).json({ error: "This phone number is already registered" });
+      }
       return;
     }
 
@@ -122,7 +135,6 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       }),
     }).catch(() => {});
 
-    // Alert staff about the new registration
     sendEmail({
       to: STAFF_EMAIL,
       subject: `[New Registration] ${fullName} — ${email}`,
@@ -139,8 +151,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("unique") || msg.includes("duplicate")) {
-      res.status(400).json({ error: "Email already registered" });
+      if (msg.toLowerCase().includes("phone")) {
+        res.status(400).json({ error: "This phone number is already registered" });
+      } else {
+        res.status(400).json({ error: "This email address is already registered" });
+      }
     } else {
+      req.log?.error({ err }, "Registration failed");
       res.status(500).json({ error: "Registration failed. Please try again." });
     }
   }
@@ -178,7 +195,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       attempts: 0,
     });
 
-    // Send OTP via email
     sendEmail({
       to: user.email,
       subject: "Your Kynaz OTP Code",
@@ -195,13 +211,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
           <p style="color:#888;font-size:12px;margin-top:24px;">If you did not attempt to log in, please ignore this email.</p>
         </div>
       `,
-    }).catch((err) => {
-      console.error("OTP email failed:", err?.message);
-    });
+    }).catch(() => {});
 
     res.json({ requiresOtp: true, pendingToken });
   } catch (err) {
-    console.error("Login error:", err instanceof Error ? err.message : err);
+    req.log?.error({ err }, "Login error");
     res.status(500).json({ error: "Login failed. Please try again." });
   }
 });
@@ -253,7 +267,7 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
 
     res.json({ user: formatUser(user), token });
   } catch (err) {
-    console.error("OTP verify error:", err instanceof Error ? err.message : err);
+    req.log?.error({ err }, "OTP verify error");
     res.status(500).json({ error: "Verification failed. Please try again." });
   }
 });

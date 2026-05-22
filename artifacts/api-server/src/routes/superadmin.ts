@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or } from "drizzle-orm";
 import { db, usersTable, agentsTable, quotationsTable, cashbackTransactionsTable } from "@workspace/db";
 import { createHash, randomBytes } from "crypto";
 import { requireSuperAdmin, type AuthenticatedRequest } from "../middlewares/auth";
@@ -95,9 +95,21 @@ router.post("/superadmin/users", requireSuperAdmin, async (req: AuthenticatedReq
       return;
     }
 
-    const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    const existing = await db
+      .select({ id: usersTable.id, email: usersTable.email, phone: usersTable.phone })
+      .from(usersTable)
+      .where(or(eq(usersTable.email, email), eq(usersTable.phone, phone)));
+
     if (existing.length > 0) {
-      res.status(400).json({ error: "Email already registered" });
+      const emailTaken = existing.some(u => u.email === email);
+      const phoneTaken = existing.some(u => u.phone === phone);
+      if (emailTaken && phoneTaken) {
+        res.status(400).json({ error: "Email and phone number are already registered" });
+      } else if (emailTaken) {
+        res.status(400).json({ error: "This email address is already registered" });
+      } else {
+        res.status(400).json({ error: "This phone number is already registered" });
+      }
       return;
     }
 
