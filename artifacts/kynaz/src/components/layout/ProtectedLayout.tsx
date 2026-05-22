@@ -50,7 +50,7 @@ export function ProtectedLayout({ children }: { children: ReactNode }) {
         />
       )}
       <div
-        className={`md:hidden fixed inset-y-0 left-0 z-50 w-[85vw] max-w-xs bg-sidebar shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`md:hidden fixed inset-y-0 left-0 z-50 w-[85vw] max-w-xs bg-background shadow-2xl transition-transform duration-300 ease-in-out ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

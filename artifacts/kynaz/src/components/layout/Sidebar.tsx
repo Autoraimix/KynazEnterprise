@@ -97,24 +97,24 @@ export function Sidebar({
         : "Portal";
 
   return (
-    <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground">
+    <div className="h-full flex flex-col bg-background text-foreground">
       <div className="p-5 flex items-center justify-between">
         <Link
           href="/"
           className="flex items-center gap-3"
           onClick={onNavClick}
         >
-          <div className="w-8 h-8 bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center rounded font-serif font-bold shrink-0">
+          <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center rounded font-serif font-bold shrink-0">
             K
           </div>
-          <span className="font-serif font-bold text-xl text-sidebar-foreground">
+          <span className="font-serif font-bold text-xl text-foreground">
             {portalLabel}
           </span>
         </Link>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Close menu"
           >
             <X size={20} />
@@ -138,8 +138,8 @@ export function Sidebar({
               onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               <Icon size={18} />
@@ -149,12 +149,12 @@ export function Sidebar({
         })}
       </div>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-border">
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               <LogOut size={18} className="mr-3" />
               Logout
