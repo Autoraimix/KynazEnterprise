@@ -33,8 +33,8 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/api-server && PORT=8081 pnpm run dev"
-waitForPort = 8081
+args = "cd artifacts/api-server && PORT=8000 pnpm run dev"
+waitForPort = 8000
 
 [[workflows.workflow]]
 name = "Kynaz Frontend"
@@ -55,6 +55,10 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
 
 [[ports]]
 localPort = 8080
