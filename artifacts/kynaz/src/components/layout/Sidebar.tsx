@@ -14,6 +14,7 @@ import {
   BarChart3,
   ShieldCheck,
   UserCog,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLocation as useWouterLocation } from "wouter";
 
-export function Sidebar({ userRole, onNavClick }: { userRole: string; onNavClick?: () => void }) {
+export function Sidebar({
+  userRole,
+  onNavClick,
+  onClose,
+}: {
+  userRole: string;
+  onNavClick?: () => void;
+  onClose?: () => void;
+}) {
   const [location] = useLocation();
   const [, setLocation] = useWouterLocation();
   const { logout } = useAuth();
@@ -60,10 +69,12 @@ export function Sidebar({ userRole, onNavClick }: { userRole: string; onNavClick
     { href: "/admin/cashback", label: "Cashback Mgt", icon: Wallet },
     { href: "/admin/infographics", label: "Infographics", icon: BarChart3 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
-    ...(isSuperAdmin ? [
-      { href: "/superadmin", label: "Super Admin", icon: ShieldCheck },
-      { href: "/superadmin/users", label: "Manage Users", icon: UserCog },
-    ] : []),
+    ...(isSuperAdmin
+      ? [
+          { href: "/superadmin", label: "Super Admin", icon: ShieldCheck },
+          { href: "/superadmin/users", label: "Manage Users", icon: UserCog },
+        ]
+      : []),
   ];
 
   const agentLinks = [
@@ -77,25 +88,49 @@ export function Sidebar({ userRole, onNavClick }: { userRole: string; onNavClick
   ];
 
   const links = isAdmin ? adminLinks : isAgent ? agentLinks : customerLinks;
-  const portalLabel = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin Portal" : isAgent ? "Agent Portal" : "Portal";
+  const portalLabel = isSuperAdmin
+    ? "Super Admin"
+    : isAdmin
+      ? "Admin Portal"
+      : isAgent
+        ? "Agent Portal"
+        : "Portal";
 
   return (
     <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground">
-      <div className="p-6">
-        <Link href="/" className="flex items-center gap-3" onClick={onNavClick}>
-          <div className="w-8 h-8 bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center rounded font-serif font-bold">
+      <div className="p-5 flex items-center justify-between">
+        <Link
+          href="/"
+          className="flex items-center gap-3"
+          onClick={onNavClick}
+        >
+          <div className="w-8 h-8 bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center rounded font-serif font-bold shrink-0">
             K
           </div>
           <span className="font-serif font-bold text-xl text-sidebar-foreground">
             {portalLabel}
           </span>
         </Link>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
-      <div className="flex-1 px-4 space-y-1 py-4 overflow-y-auto">
+      <div className="flex-1 px-4 space-y-1 py-2 overflow-y-auto">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location === link.href || (location.startsWith(link.href + "/") && link.href !== "/dashboard" && link.href !== "/admin" && link.href !== "/superadmin");
+          const isActive =
+            location === link.href ||
+            (location.startsWith(link.href + "/") &&
+              link.href !== "/dashboard" &&
+              link.href !== "/admin" &&
+              link.href !== "/superadmin");
           return (
             <Link
               key={link.href}
@@ -134,7 +169,10 @@ export function Sidebar({ userRole, onNavClick }: { userRole: string; onNavClick
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout} className="bg-primary text-white hover:bg-primary/90">
+              <AlertDialogAction
+                onClick={handleLogout}
+                className="bg-primary text-white hover:bg-primary/90"
+              >
                 Yes, Logout
               </AlertDialogAction>
             </AlertDialogFooter>
