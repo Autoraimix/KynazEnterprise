@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   LayoutDashboard,
   FileText,
@@ -42,6 +43,7 @@ export function Sidebar({
   const [location] = useLocation();
   const [, setLocation] = useWouterLocation();
   const { logout } = useAuth();
+  const { t } = useLanguage();
   const isAdmin = userRole === "admin" || userRole === "superadmin";
   const isSuperAdmin = userRole === "superadmin";
   const isAgent = userRole === "agent";
@@ -52,49 +54,49 @@ export function Sidebar({
   };
 
   const customerLinks = [
-    { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/quotations", label: "My Quotations", icon: FileText },
-    { href: "/dashboard/cashback", label: "Cashback Wallet", icon: Wallet },
-    { href: "/dashboard/referrals", label: "Referrals", icon: Users },
-    { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
-    { href: "/dashboard/profile", label: "Profile", icon: User },
+    { href: "/dashboard", labelKey: "sidebar.overview", icon: LayoutDashboard },
+    { href: "/dashboard/quotations", labelKey: "sidebar.quotations", icon: FileText },
+    { href: "/dashboard/cashback", labelKey: "sidebar.cashback", icon: Wallet },
+    { href: "/dashboard/referrals", labelKey: "sidebar.referrals", icon: Users },
+    { href: "/dashboard/notifications", labelKey: "sidebar.notifications", icon: Bell },
+    { href: "/dashboard/profile", labelKey: "sidebar.profile", icon: User },
   ];
 
   const adminLinks = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/quotations", label: "Quotations", icon: FileText },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/agents", label: "Agents", icon: Megaphone },
-    { href: "/admin/leaderboard", label: "Leaderboard", icon: Trophy },
-    { href: "/admin/cashback", label: "Cashback Mgt", icon: Wallet },
-    { href: "/admin/infographics", label: "Infographics", icon: BarChart3 },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard },
+    { href: "/admin/quotations", labelKey: "admin.quotations", icon: FileText },
+    { href: "/admin/users", labelKey: "admin.users", icon: Users },
+    { href: "/admin/agents", labelKey: "admin.agents", icon: Megaphone },
+    { href: "/admin/leaderboard", labelKey: "admin.leaderboard", icon: Trophy },
+    { href: "/admin/cashback", labelKey: "admin.cashback", icon: Wallet },
+    { href: "/admin/infographics", labelKey: "admin.infographics", icon: BarChart3 },
+    { href: "/admin/settings", labelKey: "admin.settings", icon: Settings },
     ...(isSuperAdmin
       ? [
-          { href: "/superadmin", label: "Super Admin", icon: ShieldCheck },
-          { href: "/superadmin/users", label: "Manage Users", icon: UserCog },
+          { href: "/superadmin", labelKey: "sidebar.superAdmin", icon: ShieldCheck },
+          { href: "/superadmin/users", labelKey: "admin.manageUsers", icon: UserCog },
         ]
       : []),
   ];
 
   const agentLinks = [
-    { href: "/agent", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/agent/customers", label: "My Customers", icon: Users },
-    { href: "/agent/quotations", label: "Quotations", icon: FileText },
-    { href: "/agent/commissions", label: "Commissions", icon: Wallet },
-    { href: "/agent/ranking", label: "Leaderboard", icon: Trophy },
-    { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
-    { href: "/dashboard/profile", label: "Profile", icon: User },
+    { href: "/agent", labelKey: "agent.dashboard", icon: LayoutDashboard },
+    { href: "/agent/customers", labelKey: "agent.customers", icon: Users },
+    { href: "/agent/quotations", labelKey: "agent.quotations", icon: FileText },
+    { href: "/agent/commissions", labelKey: "agent.commissions", icon: Wallet },
+    { href: "/agent/ranking", labelKey: "agent.ranking", icon: Trophy },
+    { href: "/dashboard/notifications", labelKey: "sidebar.notifications", icon: Bell },
+    { href: "/dashboard/profile", labelKey: "sidebar.profile", icon: User },
   ];
 
   const links = isAdmin ? adminLinks : isAgent ? agentLinks : customerLinks;
   const portalLabel = isSuperAdmin
-    ? "Super Admin"
+    ? t("sidebar.superAdmin")
     : isAdmin
-      ? "Admin Portal"
+      ? t("sidebar.adminPortal")
       : isAgent
-        ? "Agent Portal"
-        : "Portal";
+        ? t("sidebar.agentPortal")
+        : t("sidebar.portal");
 
   return (
     <div className="h-full flex flex-col bg-background text-foreground">
@@ -143,7 +145,7 @@ export function Sidebar({
               }`}
             >
               <Icon size={18} />
-              {link.label}
+              {t(link.labelKey)}
             </Link>
           );
         })}
@@ -157,23 +159,23 @@ export function Sidebar({
               className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               <LogOut size={18} className="mr-3" />
-              Logout
+              {t("sidebar.logout")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+              <AlertDialogTitle>{t("logout.title")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to log out of Kynaz Enterprise Portal?
+                {t("logout.desc")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleLogout}
                 className="bg-primary text-white hover:bg-primary/90"
               >
-                Yes, Logout
+                {t("logout.confirm")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -1,0 +1,215 @@
+[
+  {
+    "id": 1,
+    "name": "Road Tax Renewal",
+    "slug": "road-tax-renewal",
+    "category": "Vehicle",
+    "description": "Hassle-free road tax renewal for all vehicle types. We handle the paperwork so you can focus on what matters.",
+    "benefits": [
+      "Fast processing",
+      "Doorstep delivery option",
+      "Competitive rates",
+      "All vehicle types covered"
+    ],
+    "required_documents": [
+      "Vehicle Registration Card (Geran)",
+      "IC Copy",
+      "Insurance Certificate"
+    ],
+    "icon": "Car",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:02.491Z"
+  },
+  {
+    "id": 2,
+    "name": "Travel Insurance / Takaful",
+    "slug": "travel-insurance",
+    "category": "Insurance",
+    "description": "Comprehensive travel protection for domestic and international trips. Travel with confidence knowing you are covered.",
+    "benefits": [
+      "Medical coverage abroad",
+      "Trip cancellation protection",
+      "Baggage loss coverage",
+      "24/7 emergency assistance"
+    ],
+    "required_documents": [
+      "IC / Passport Copy",
+      "Travel itinerary"
+    ],
+    "icon": "Plane",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:04.349Z"
+  },
+  {
+    "id": 3,
+    "name": "Foreign Workers Insurance Guarantee (IG) & Foreign Worker Hospitalization and Surgical Scheme (SKHPPA)",
+    "slug": "foreign-worker-insurance",
+    "category": "Insurance",
+    "description": "Comprehensive protection for your foreign workforce covering Immigration Guarantee (FWCMS) and Foreign Worker Hospitalization and Surgical Scheme (SKHPPA/SPIKPA). Fully compliant with Malaysian immigration requirements.",
+    "benefits": [
+      "FWCMS / Immigration Guarantee compliant",
+      "SKHPPA (SPIKPA) hospitalization & surgical coverage",
+      "Group & bulk processing available",
+      "Fast FWCMS system submission",
+      "Compliant with Ministry of Home Affairs requirements",
+      "Covers inpatient, surgical & outpatient treatment"
+    ],
+    "required_documents": [
+      "Worker passport copies (all pages)",
+      "Company ROC / SSM registration",
+      "FWCMS Transaction Reference Numbers",
+      "Immigration office details",
+      "Employment details for each worker",
+      "Company registration documents"
+    ],
+    "icon": "Users",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:05.997Z"
+  },
+  {
+    "id": 4,
+    "name": "Home & Household Protection",
+    "slug": "home-protection",
+    "category": "Insurance",
+    "description": "Protect your home and valuables against natural disasters, fire, theft, and more.",
+    "benefits": [
+      "Fire coverage",
+      "Natural disaster protection",
+      "Theft coverage",
+      "Public liability included"
+    ],
+    "required_documents": [
+      "Property details",
+      "IC Copy",
+      "Existing insurance (if any)"
+    ],
+    "icon": "Home",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:08.645Z"
+  },
+  {
+    "id": 5,
+    "name": "Public Liability Insurance",
+    "slug": "public-liability",
+    "category": "Business",
+    "description": "Essential coverage for businesses against third-party injury or property damage claims.",
+    "benefits": [
+      "Third-party coverage",
+      "Legal defense costs",
+      "Customizable limits",
+      "Fast claims process"
+    ],
+    "required_documents": [
+      "Business registration",
+      "Nature of business details",
+      "Previous claims history"
+    ],
+    "icon": "Shield",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:10.282Z"
+  },
+  {
+    "id": 6,
+    "name": "Contractor All Risks",
+    "slug": "contractor-all-risks",
+    "category": "Business",
+    "description": "Comprehensive coverage for construction projects against all-risk losses and third-party liabilities.",
+    "benefits": [
+      "All-risk coverage",
+      "Third party liability",
+      "Existing structures covered",
+      "Plant & machinery"
+    ],
+    "required_documents": [
+      "Contract details",
+      "Project scope",
+      "Contract value"
+    ],
+    "icon": "HardHat",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:12.033Z"
+  },
+  {
+    "id": 7,
+    "name": "Workmen Compensation",
+    "slug": "workmen-compensation",
+    "category": "Business",
+    "description": "Mandatory workmen compensation coverage for your employees against work-related injuries and illnesses.",
+    "benefits": [
+      "SOCSO compliant",
+      "Medical expense coverage",
+      "Disability benefits",
+      "Death benefits"
+    ],
+    "required_documents": [
+      "Employee list",
+      "Payroll details",
+      "Nature of work"
+    ],
+    "icon": "Briefcase",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:14.766Z"
+  },
+  {
+    "id": 8,
+    "name": "Medical Malpractice Insurance",
+    "slug": "medical-malpractice",
+    "category": "Professional",
+    "description": "Protect healthcare professionals against claims arising from professional negligence or errors in medical practice.",
+    "benefits": [
+      "Professional indemnity",
+      "Legal defense coverage",
+      "Retroactive coverage",
+      "Worldwide coverage"
+    ],
+    "required_documents": [
+      "Professional license",
+      "Practice details",
+      "Claims history"
+    ],
+    "icon": "Stethoscope",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:16.551Z"
+  },
+  {
+    "id": 9,
+    "name": "General Takaful Services",
+    "slug": "general-takaful",
+    "category": "Takaful",
+    "description": "Shariah-compliant general takaful solutions covering motor, fire, marine, and more.",
+    "benefits": [
+      "Shariah-compliant",
+      "Surplus sharing",
+      "Transparent pricing",
+      "Multiple coverage options"
+    ],
+    "required_documents": [
+      "IC Copy",
+      "Subject matter details"
+    ],
+    "icon": "Heart",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:18.465Z"
+  },
+  {
+    "id": 10,
+    "name": "Hibah & Medical Card (PruBSN Takaful)",
+    "slug": "hibah-medical-card",
+    "category": "Takaful",
+    "description": "PruBSN Takaful's Hibah and Medical Card providing life protection and comprehensive medical coverage.",
+    "benefits": [
+      "Life coverage",
+      "Medical card benefits",
+      "Hibah nomination",
+      "Cash value accumulation"
+    ],
+    "required_documents": [
+      "IC Copy",
+      "Medical history",
+      "Income details"
+    ],
+    "icon": "CreditCard",
+    "is_active": true,
+    "created_at": "2026-05-16T06:53:20.078Z"
+  }
+]
