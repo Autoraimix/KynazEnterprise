@@ -1,8 +1,16 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, ne } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, usersTable, agentsTable, quotationsTable, cashbackTransactionsTable } from "@workspace/db";
 import { createHash, randomBytes } from "crypto";
 import { requireSuperAdmin, type AuthenticatedRequest } from "../middlewares/auth";
+import {
+  sendEmail,
+  emailWelcomeCreatedByAdmin,
+  emailRoleChanged,
+  emailAccountSuspended,
+  emailAccountUnsuspended,
+  emailPasswordResetByAdmin,
+} from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -12,6 +20,10 @@ function hashPassword(password: string): string {
 
 function generateReferralCode(): string {
   return randomBytes(4).toString("hex").toUpperCase();
+}
+
+function generateTempPassword(): string {
+  return randomBytes(5).toString("hex"); // 10-char hex temp password
 }
 
 function formatUser(user: typeof usersTable.$inferSelect) {
@@ -70,7 +82,7 @@ router.get("/superadmin/users/:id", requireSuperAdmin, async (req, res): Promise
   res.json(formatUser(user));
 });
 
-// Create user with any role
+// Create user with any role — sends welcome email with temp password
 router.post("/superadmin/users", requireSuperAdmin, async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
     const { fullName, email, phone, password, role } = req.body as {
@@ -116,6 +128,19 @@ router.post("/superadmin/users", requireSuperAdmin, async (req: AuthenticatedReq
       }).onConflictDoNothing();
     }
 
+    // Email new user with their credentials
+    sendEmail({
+      to: email,
+      subject: "Your Kynaz Enterprise Account Has Been Created",
+      html: emailWelcomeCreatedByAdmin({
+        name: fullName,
+        email,
+        tempPassword: password,
+        role,
+        referralCode,
+      }),
+    }).catch(() => {});
+
     res.status(201).json(formatUser(user));
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -127,7 +152,7 @@ router.post("/superadmin/users", requireSuperAdmin, async (req: AuthenticatedReq
   }
 });
 
-// Update user (role, name, phone, suspend)
+// Update user (role, name, phone, suspend) — sends appropriate email for each change type
 router.patch("/superadmin/users/:id", requireSuperAdmin, async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
     const id = Number(req.params.id);
@@ -136,6 +161,10 @@ router.patch("/superadmin/users/:id", requireSuperAdmin, async (req: Authenticat
       role?: "customer" | "agent" | "admin" | "superadmin";
       isSuspended?: boolean; isVerified?: boolean;
     };
+
+    // Fetch user before update to compare changes
+    const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    if (!currentUser) { res.status(404).json({ error: "User not found" }); return; }
 
     const updateData: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
     if (fullName !== undefined) updateData.fullName = fullName;
@@ -160,26 +189,70 @@ router.patch("/superadmin/users/:id", requireSuperAdmin, async (req: Authenticat
       }).onConflictDoNothing();
     }
 
+    // Email: role changed
+    if (role !== undefined && role !== currentUser.role) {
+      sendEmail({
+        to: user.email,
+        subject: "Your Kynaz Account Role Has Been Updated",
+        html: emailRoleChanged({
+          name: user.fullName,
+          oldRole: currentUser.role,
+          newRole: role,
+        }),
+      }).catch(() => {});
+    }
+
+    // Email: account suspended
+    if (isSuspended === true && !currentUser.isSuspended) {
+      sendEmail({
+        to: user.email,
+        subject: "Your Kynaz Account Has Been Suspended",
+        html: emailAccountSuspended({ name: user.fullName }),
+      }).catch(() => {});
+    }
+
+    // Email: account reinstated
+    if (isSuspended === false && currentUser.isSuspended) {
+      sendEmail({
+        to: user.email,
+        subject: "Your Kynaz Account Has Been Reinstated",
+        html: emailAccountUnsuspended({ name: user.fullName }),
+      }).catch(() => {});
+    }
+
     res.json(formatUser(user));
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: "Failed to update user" });
   }
 });
 
-// Reset user password
+// Reset user password — sends temp password via email
 router.post("/superadmin/users/:id/reset-password", requireSuperAdmin, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
-  const { newPassword } = req.body as { newPassword: string };
-  if (!newPassword || newPassword.length < 6) {
+  const { newPassword } = req.body as { newPassword?: string };
+
+  // Use provided password or generate a temp one
+  const tempPassword = newPassword && newPassword.length >= 6 ? newPassword : generateTempPassword();
+
+  if (newPassword && newPassword.length < 6) {
     res.status(400).json({ error: "Password must be at least 6 characters" });
     return;
   }
+
   const [user] = await db.update(usersTable)
-    .set({ passwordHash: hashPassword(newPassword), updatedAt: new Date() })
+    .set({ passwordHash: hashPassword(tempPassword), updatedAt: new Date() })
     .where(eq(usersTable.id, id))
     .returning();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
-  res.json({ message: "Password reset successfully" });
+
+  // Email user their new temp password
+  sendEmail({
+    to: user.email,
+    subject: "Your Kynaz Account Password Has Been Reset",
+    html: emailPasswordResetByAdmin({ name: user.fullName, tempPassword }),
+  }).catch(() => {});
+
+  res.json({ message: "Password reset successfully. User has been notified by email." });
 });
 
 // Delete user

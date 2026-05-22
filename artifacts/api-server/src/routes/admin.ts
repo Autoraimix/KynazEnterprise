@@ -12,7 +12,18 @@ import {
   SetQuotationSpeedBody,
 } from "@workspace/api-zod";
 import { requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
-import { sendEmail, emailQuotationReady, emailPaymentVerified, emailCashbackCredited, emailAgentQuotationUpdate } from "../lib/email";
+import {
+  sendEmail,
+  STAFF_EMAIL,
+  emailQuotationReady,
+  emailQuotationStatusChanged,
+  emailPaymentVerified,
+  emailCashbackCredited,
+  emailAgentQuotationUpdate,
+  emailAccountSuspended,
+  emailAccountUnsuspended,
+  emailRoleChanged,
+} from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -143,6 +154,13 @@ router.patch("/admin/users/:id", requireAdmin, async (req, res): Promise<void> =
     return;
   }
 
+  // Fetch current user to detect role changes
+  const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!currentUser) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
   const updateData: Partial<typeof usersTable.$inferInsert> = {};
   if (parsed.data.fullName) updateData.fullName = parsed.data.fullName;
   if (parsed.data.phone) updateData.phone = parsed.data.phone;
@@ -155,6 +173,20 @@ router.patch("/admin/users/:id", requireAdmin, async (req, res): Promise<void> =
     res.status(404).json({ error: "User not found" });
     return;
   }
+
+  // Email user if their role changed
+  if (parsed.data.role && parsed.data.role !== currentUser.role) {
+    sendEmail({
+      to: user.email,
+      subject: "Your Kynaz Account Role Has Been Updated",
+      html: emailRoleChanged({
+        name: user.fullName,
+        oldRole: currentUser.role,
+        newRole: parsed.data.role,
+      }),
+    }).catch(() => {});
+  }
+
   res.json(formatUser(user));
 });
 
@@ -172,10 +204,43 @@ router.post("/admin/users/:id/suspend", requireAdmin, async (req, res): Promise<
     return;
   }
 
+  // Fetch user before update
+  const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!currentUser) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
   await db.update(usersTable).set({ isSuspended: parsed.data.suspended })
     .where(eq(usersTable.id, id));
 
-  res.json({ message: parsed.data.suspended ? "User suspended" : "User unsuspended" });
+  const isSuspending = parsed.data.suspended;
+
+  // Email the user about their account status change
+  sendEmail({
+    to: currentUser.email,
+    subject: isSuspending
+      ? "Your Kynaz Account Has Been Suspended"
+      : "Your Kynaz Account Has Been Reinstated",
+    html: isSuspending
+      ? emailAccountSuspended({ name: currentUser.fullName })
+      : emailAccountUnsuspended({ name: currentUser.fullName }),
+  }).catch(() => {});
+
+  // Notify user in-app (if unsuspended, they can now log in and see it)
+  if (!isSuspending) {
+    try {
+      await db.insert(notificationsTable).values({
+        userId: currentUser.id,
+        title: "Account Reinstated",
+        message: "Your account has been reinstated. You can now access all features of the portal.",
+        type: "info",
+        isRead: false,
+      });
+    } catch (_e) { /* non-fatal */ }
+  }
+
+  res.json({ message: isSuspending ? "User suspended" : "User unsuspended" });
 });
 
 // Quotation management
@@ -230,8 +295,11 @@ router.patch("/admin/quotations/:id", requireAdmin, async (req, res): Promise<vo
     return;
   }
 
-  // Notify user if status changed to ready
-  if (parsed.data.status === "ready" && currentQuotation.status !== "ready" && updated.userId) {
+  const newStatus = parsed.data.status;
+  const statusChanged = newStatus && newStatus !== currentQuotation.status;
+
+  // ── Status: ready ──────────────────────────────────────────────────────────
+  if (newStatus === "ready" && statusChanged && updated.userId) {
     try {
       await db.insert(notificationsTable).values({
         userId: updated.userId,
@@ -242,11 +310,10 @@ router.patch("/admin/quotations/:id", requireAdmin, async (req, res): Promise<vo
       });
     } catch (_e) { /* non-fatal */ }
 
-    // Email customer
     const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
     const [svc] = await db.select().from(servicesTable).where(eq(servicesTable.id, updated.serviceId));
     if (customer) {
-      const dashUrl = `${process.env.APP_URL ?? "https://kynazenteprise.my"}/dashboard/quotations/${updated.id}`;
+      const dashUrl = `${process.env.APP_URL ?? "https://kynazenterprise.my"}/dashboard/quotations/${updated.id}`;
       sendEmail({
         to: customer.email,
         subject: `Your Quotation is Ready — ${updated.quotationRef ?? `#${updated.id}`}`,
@@ -259,7 +326,7 @@ router.patch("/admin/quotations/:id", requireAdmin, async (req, res): Promise<vo
         }),
       }).catch(() => {});
 
-      // Notify agent if customer was referred by one
+      // Notify referring agent
       if (customer.referredByCode) {
         const [agentUser] = await db.select().from(usersTable).where(eq(usersTable.referralCode, customer.referredByCode));
         if (agentUser && agentUser.role === "agent") {
@@ -278,8 +345,65 @@ router.patch("/admin/quotations/:id", requireAdmin, async (req, res): Promise<vo
     }
   }
 
-  // Handle payment verification — when admin sets status to "paid"
-  if (parsed.data.status === "paid" && currentQuotation.status !== "paid" && updated.userId) {
+  // ── Status: cancelled or rejected ─────────────────────────────────────────
+  if ((newStatus === "cancelled" || newStatus === "rejected") && statusChanged && updated.userId) {
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
+    const [svc] = await db.select().from(servicesTable).where(eq(servicesTable.id, updated.serviceId));
+    if (customer) {
+      try {
+        await db.insert(notificationsTable).values({
+          userId: updated.userId,
+          title: newStatus === "cancelled" ? "Quotation Cancelled" : "Quotation Rejected",
+          message: `Your quotation ${updated.quotationRef ?? `#${updated.id}`} has been ${newStatus}.${updated.remarks ? ` Reason: ${updated.remarks}` : ""}`,
+          type: "quotation",
+          isRead: false,
+        });
+      } catch (_e) { /* non-fatal */ }
+
+      sendEmail({
+        to: customer.email,
+        subject: `Quotation ${newStatus === "cancelled" ? "Cancelled" : "Update"} — ${updated.quotationRef ?? `#${updated.id}`}`,
+        html: emailQuotationStatusChanged({
+          name: customer.fullName,
+          ref: updated.quotationRef ?? `#${updated.id}`,
+          service: svc?.name ?? "Service",
+          status: newStatus,
+          remarks: updated.remarks ?? undefined,
+        }),
+      }).catch(() => {});
+    }
+  }
+
+  // ── Status: processing ────────────────────────────────────────────────────
+  if (newStatus === "processing" && statusChanged && updated.userId) {
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
+    const [svc] = await db.select().from(servicesTable).where(eq(servicesTable.id, updated.serviceId));
+    if (customer) {
+      try {
+        await db.insert(notificationsTable).values({
+          userId: updated.userId,
+          title: "Quotation Being Processed",
+          message: `Your quotation ${updated.quotationRef ?? `#${updated.id}`} is being processed by our team.`,
+          type: "quotation",
+          isRead: false,
+        });
+      } catch (_e) { /* non-fatal */ }
+
+      sendEmail({
+        to: customer.email,
+        subject: `Quotation Update — ${updated.quotationRef ?? `#${updated.id}`}`,
+        html: emailQuotationStatusChanged({
+          name: customer.fullName,
+          ref: updated.quotationRef ?? `#${updated.id}`,
+          service: svc?.name ?? "Service",
+          status: "processing",
+        }),
+      }).catch(() => {});
+    }
+  }
+
+  // ── Status: paid — verify payment and credit cashback ────────────────────
+  if (newStatus === "paid" && statusChanged && updated.userId) {
     const priceVal = updated.price ? parseFloat(updated.price) : null;
     const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
     const [svc] = await db.select().from(servicesTable).where(eq(servicesTable.id, updated.serviceId));
@@ -313,7 +437,6 @@ router.patch("/admin/quotations/:id", requireAdmin, async (req, res): Promise<vo
             isRead: false,
           });
 
-          // Email customer
           sendEmail({
             to: customer.email,
             subject: `Payment Verified — ${updated.quotationRef ?? `#${updated.id}`}`,
@@ -453,6 +576,19 @@ router.post("/admin/cashback", requireAdmin, async (req, res): Promise<void> => 
   await db.update(usersTable)
     .set({ cashbackBalance: newBalance.toFixed(2) })
     .where(eq(usersTable.id, userId));
+
+  // In-app notification for cashback credit
+  if (type !== "redeemed") {
+    try {
+      await db.insert(notificationsTable).values({
+        userId,
+        title: "Cashback Credited",
+        message: `RM ${amount.toFixed(2)} has been credited to your cashback wallet. ${description}`,
+        type: "cashback",
+        isRead: false,
+      });
+    } catch (_e) { /* non-fatal */ }
+  }
 
   // Send email for cashback credit/adjustment
   if (type === "earned" || type === "adjusted" || type === "promotion" || type === "referral") {

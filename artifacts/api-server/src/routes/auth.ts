@@ -7,7 +7,7 @@ import {
   ResetPasswordBody,
 } from "@workspace/api-zod";
 import { createHash, randomBytes } from "crypto";
-import { sendEmail, emailWelcomeCustomer } from "../lib/email";
+import { sendEmail, STAFF_EMAIL, emailWelcomeCustomer, emailStaffNewUser } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -119,6 +119,19 @@ router.post("/auth/register", async (req, res): Promise<void> => {
         name: fullName,
         referralCode: newCode,
         agentName,
+      }),
+    }).catch(() => {});
+
+    // Alert staff about the new registration
+    sendEmail({
+      to: STAFF_EMAIL,
+      subject: `[New Registration] ${fullName} — ${email}`,
+      html: emailStaffNewUser({
+        name: fullName,
+        email,
+        phone,
+        role: "customer",
+        referredBy: referralCode ? referralCode.toUpperCase().trim() : undefined,
       }),
     }).catch(() => {});
 

@@ -3,7 +3,15 @@ import { eq, and } from "drizzle-orm";
 import { db, quotationsTable, servicesTable, usersTable, notificationsTable } from "@workspace/db";
 import { CreateQuotationBody } from "@workspace/api-zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
-import { sendEmail, emailQuotationSubmitted, emailPaymentProofReceived } from "../lib/email";
+import {
+  sendEmail,
+  STAFF_EMAIL,
+  emailQuotationSubmitted,
+  emailGuestQuotationConfirmation,
+  emailPaymentProofReceived,
+  emailStaffNewQuotation,
+  emailWithdrawalSubmitted,
+} from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -83,7 +91,7 @@ router.post("/quotations", requireAuth, async (req: AuthenticatedRequest, res): 
     .where(eq(quotationsTable.id, quotation.id))
     .returning();
 
-  // Create notification — wrapped in try-catch so it never crashes the request
+  // Create notification
   try {
     await db.insert(notificationsTable).values({
       userId,
@@ -94,8 +102,10 @@ router.post("/quotations", requireAuth, async (req: AuthenticatedRequest, res): 
     });
   } catch (_e) { /* non-fatal */ }
 
-  // Send email confirmation
+  // Fetch submitter for emails
   const [submitter] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  // Email customer — confirmation
   if (submitter) {
     sendEmail({
       to: submitter.email,
@@ -103,6 +113,23 @@ router.post("/quotations", requireAuth, async (req: AuthenticatedRequest, res): 
       html: emailQuotationSubmitted({ name: submitter.fullName, ref, service: service.name }),
     }).catch(() => {});
   }
+
+  // Email staff — new quotation alert with full form data
+  const adminUrl = `${process.env.APP_URL ?? "https://kynazenterprise.my"}/admin/quotations`;
+  sendEmail({
+    to: STAFF_EMAIL,
+    subject: `[New Quotation] ${ref} — ${service.name} (Member)`,
+    html: emailStaffNewQuotation({
+      ref,
+      service: service.name,
+      isGuest: false,
+      customerName: submitter?.fullName ?? "Unknown",
+      customerEmail: submitter?.email ?? "Unknown",
+      customerPhone: submitter?.phone ?? "—",
+      formData: (formData ?? {}) as Record<string, unknown>,
+      dashboardUrl: adminUrl,
+    }),
+  }).catch(() => {});
 
   res.status(201).json(formatQuotation(updated, service.name));
 });
@@ -128,7 +155,6 @@ router.post("/quotations/guest", async (req, res): Promise<void> => {
     return;
   }
 
-  // Use full formData from client if provided (service-specific fields), else fall back to basics
   const storedFormData: Record<string, unknown> =
     bodyFormData && typeof bodyFormData === "object"
       ? { ...bodyFormData as Record<string, unknown> }
@@ -152,6 +178,36 @@ router.post("/quotations/guest", async (req, res): Promise<void> => {
     .set({ quotationRef: ref })
     .where(eq(quotationsTable.id, quotation.id))
     .returning();
+
+  // Email guest — confirmation with ref number
+  sendEmail({
+    to: email,
+    subject: `Quotation Request Received — ${ref}`,
+    html: emailGuestQuotationConfirmation({
+      name: fullName,
+      ref,
+      service: service.name,
+      email,
+      phone,
+    }),
+  }).catch(() => {});
+
+  // Email staff — new guest quotation alert with full form data
+  const adminUrl = `${process.env.APP_URL ?? "https://kynazenterprise.my"}/admin/quotations`;
+  sendEmail({
+    to: STAFF_EMAIL,
+    subject: `[New Guest Quotation] ${ref} — ${service.name}`,
+    html: emailStaffNewQuotation({
+      ref,
+      service: service.name,
+      isGuest: true,
+      customerName: fullName,
+      customerEmail: email,
+      customerPhone: phone,
+      formData: storedFormData,
+      dashboardUrl: adminUrl,
+    }),
+  }).catch(() => {});
 
   res.status(201).json(formatQuotation(updated, service.name));
 });
@@ -244,7 +300,7 @@ router.post("/quotations/:id/payment-proof", requireAuth, async (req: Authentica
 
   const [service] = await db.select().from(servicesTable).where(eq(servicesTable.id, quotation.serviceId));
 
-  // Notify user — non-fatal
+  // Notify user
   try {
     await db.insert(notificationsTable).values({
       userId,
@@ -255,7 +311,7 @@ router.post("/quotations/:id/payment-proof", requireAuth, async (req: Authentica
     });
   } catch (_e) { /* non-fatal */ }
 
-  // Send email
+  // Email customer — payment proof confirmation
   const [payer] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   const totalAmt = updated.price && updated.taxAmount
     ? parseFloat(updated.price) + parseFloat(updated.taxAmount)
@@ -279,7 +335,7 @@ router.post("/quotations/:id/payment-proof", requireAuth, async (req: Authentica
 // Cashback withdrawal request
 router.post("/cashback/withdraw", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   const userId = req.userId!;
-  const { amount } = req.body;
+  const { amount, bankName, accountName, accountNumber } = req.body;
 
   const amountNum = parseFloat(amount);
   if (!amount || isNaN(amountNum) || amountNum < 50) {
@@ -302,7 +358,7 @@ router.post("/cashback/withdraw", requireAuth, async (req: AuthenticatedRequest,
   const newBalance = parseFloat((balance - amountNum).toFixed(2));
 
   try {
-    const { cashbackTransactionsTable } = await import("@workspace/db");
+    const { cashbackTransactionsTable, withdrawalRequestsTable } = await import("@workspace/db");
 
     await db.insert(cashbackTransactionsTable).values({
       userId,
@@ -311,6 +367,19 @@ router.post("/cashback/withdraw", requireAuth, async (req: AuthenticatedRequest,
       description: `Withdrawal Request — RM ${amountNum.toFixed(2)} (pending bank transfer processing)`,
       referenceId: null,
     });
+
+    // Create withdrawal record if bank details provided
+    if (bankName && accountName && accountNumber) {
+      await db.insert(withdrawalRequestsTable).values({
+        userId,
+        requestType: "cashback",
+        amount: amountNum.toFixed(2),
+        bankName,
+        accountName,
+        accountNumber,
+        status: "pending",
+      }).catch(() => {}); // non-fatal if table schema differs
+    }
 
     await db.update(usersTable)
       .set({ cashbackBalance: newBalance.toFixed(2) })
@@ -323,6 +392,30 @@ router.post("/cashback/withdraw", requireAuth, async (req: AuthenticatedRequest,
       message: `Your cashback withdrawal request of RM ${amountNum.toFixed(2)} has been submitted. Our team will process your bank transfer within 3–5 business days.`,
       type: "cashback",
       isRead: false,
+    }).catch(() => {});
+
+    // Email customer — withdrawal confirmation
+    sendEmail({
+      to: user.email,
+      subject: "Cashback Withdrawal Request Received",
+      html: emailWithdrawalSubmitted({ name: user.fullName, amount: amountNum, type: "cashback" }),
+    }).catch(() => {});
+
+    // Email staff — withdrawal alert
+    const { emailStaffWithdrawalRequest } = await import("../lib/email");
+    sendEmail({
+      to: STAFF_EMAIL,
+      subject: `[Withdrawal Request] RM ${amountNum.toFixed(2)} — ${user.fullName}`,
+      html: emailStaffWithdrawalRequest({
+        name: user.fullName,
+        email: user.email,
+        amount: amountNum,
+        type: "customer",
+        bankName: bankName ?? "Not provided",
+        accountName: accountName ?? "Not provided",
+        accountNumber: accountNumber ?? "Not provided",
+        dashboardUrl: `${process.env.APP_URL ?? "https://kynazenterprise.my"}/admin/cashback`,
+      }),
     }).catch(() => {});
 
     res.json({ message: "Withdrawal request submitted successfully", newBalance });

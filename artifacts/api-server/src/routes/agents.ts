@@ -6,7 +6,16 @@ import {
   withdrawalRequestsTable
 } from "@workspace/db";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
-import { sendEmail, emailAgentWelcome } from "../lib/email";
+import {
+  sendEmail,
+  STAFF_EMAIL,
+  emailAgentWelcome,
+  emailAgentCommissionPayout,
+  emailAgentBroadcast,
+  emailWithdrawalProcessed,
+  emailWithdrawalSubmitted,
+  emailStaffWithdrawalRequest,
+} from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -392,7 +401,19 @@ router.post("/admin/agents/:id/payout", requireAdmin, async (req, res): Promise<
     .where(eq(agentsTable.id, id))
     .returning();
 
-  res.json({ message: "Payout processed", newBalance: parseFloat(updated.commissionBalance) });
+  const newBalance = parseFloat(updated.commissionBalance);
+
+  // Email agent — commission payout notification
+  const [agentUser] = await db.select().from(usersTable).where(eq(usersTable.id, agent.userId));
+  if (agentUser) {
+    sendEmail({
+      to: agentUser.email,
+      subject: "Commission Payout Processed — Kynaz Enterprise",
+      html: emailAgentCommissionPayout({ agentName: agentUser.fullName, amount: amountNum, newBalance }),
+    }).catch(() => {});
+  }
+
+  res.json({ message: "Payout processed", newBalance });
 });
 
 // Admin — refresh leaderboard rankings
@@ -455,6 +476,35 @@ router.post("/agents/commissions/withdraw", requireAgent, async (req: Authentica
     .set({ commissionBalance: (currentBalance - amountNum).toFixed(2), updatedAt: new Date() })
     .where(eq(agentsTable.id, agent.id));
 
+  // Look up agent user details for emails
+  const [agentUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  // Email agent — withdrawal request confirmation
+  if (agentUser) {
+    sendEmail({
+      to: agentUser.email,
+      subject: "Commission Withdrawal Request Received — Kynaz Enterprise",
+      html: emailWithdrawalSubmitted({ name: agentUser.fullName, amount: amountNum, type: "commission" }),
+    }).catch(() => {});
+  }
+
+  // Email staff — agent withdrawal alert
+  const adminUrl = `${process.env.APP_URL ?? "https://kynazenterprise.my"}/admin/agents`;
+  sendEmail({
+    to: STAFF_EMAIL,
+    subject: `[Agent Withdrawal] RM ${amountNum.toFixed(2)} — ${agentUser?.fullName ?? `User #${userId}`}`,
+    html: emailStaffWithdrawalRequest({
+      name: agentUser?.fullName ?? `User #${userId}`,
+      email: agentUser?.email ?? "—",
+      amount: amountNum,
+      type: "agent",
+      bankName,
+      accountName,
+      accountNumber,
+      dashboardUrl: adminUrl,
+    }),
+  }).catch(() => {});
+
   res.status(201).json({ ...request, amount: parseFloat(request.amount) });
 });
 
@@ -505,6 +555,26 @@ router.patch("/admin/withdrawals/:id", requireAdmin, async (req, res): Promise<v
   if (status === "completed" || status === "approved") updateData.processedAt = new Date();
 
   const [updated] = await db.update(withdrawalRequestsTable).set(updateData).where(eq(withdrawalRequestsTable.id, id)).returning();
+
+  // Email the user about their withdrawal status
+  if (status === "completed" || status === "approved" || status === "rejected") {
+    const [wUser] = await db.select().from(usersTable).where(eq(usersTable.id, existing.userId));
+    if (wUser) {
+      const wType = existing.requestType === "agent" ? "commission" : "cashback";
+      sendEmail({
+        to: wUser.email,
+        subject: `Withdrawal ${status === "rejected" ? "Rejected" : "Processed"} — Kynaz Enterprise`,
+        html: emailWithdrawalProcessed({
+          name: wUser.fullName,
+          amount: parseFloat(existing.amount),
+          type: wType,
+          status: status as "completed" | "approved" | "rejected",
+          adminNotes: adminNotes ?? undefined,
+        }),
+      }).catch(() => {});
+    }
+  }
+
   res.json({ ...updated, amount: parseFloat(updated.amount) });
 });
 
@@ -519,9 +589,15 @@ router.post("/admin/agents/broadcast", requireAdmin, async (req: AuthenticatedRe
     sentBy: req.userId!,
   }).returning();
 
-  // Notify all active agents via notification
+  // Notify all active agents via in-app notification + email
   const agents = await db.select().from(agentsTable).where(eq(agentsTable.status, "active"));
+  const agentUsers = agents.length > 0
+    ? await db.select().from(usersTable)
+    : [];
+  const agentUserMap = new Map(agentUsers.map(u => [u.id, u]));
+
   for (const agent of agents) {
+    // In-app notification
     await db.insert(notificationsTable).values({
       userId: agent.userId,
       title,
@@ -529,6 +605,16 @@ router.post("/admin/agents/broadcast", requireAdmin, async (req: AuthenticatedRe
       type: "announcement",
       isRead: false,
     }).catch(() => {});
+
+    // Email each agent the broadcast
+    const agentUser = agentUserMap.get(agent.userId);
+    if (agentUser) {
+      sendEmail({
+        to: agentUser.email,
+        subject: `📢 Agent Announcement: ${title}`,
+        html: emailAgentBroadcast({ agentName: agentUser.fullName, title, message }),
+      }).catch(() => {});
+    }
   }
 
   res.status(201).json(broadcast);
