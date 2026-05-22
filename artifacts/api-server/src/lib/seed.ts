@@ -11,6 +11,10 @@ import {
   cashbackTransactionsTable,
   referralsTable,
   settingsTable,
+  agentsTable,
+  commissionsTable,
+  agentBroadcastsTable,
+  withdrawalRequestsTable,
 } from "@workspace/db";
 
 const seedDir = path.resolve(
@@ -53,6 +57,10 @@ export async function seedDatabase(): Promise<void> {
     quotations,
     notifications,
     cashbackTransactions,
+    agents,
+    commissions,
+    agentBroadcasts,
+    withdrawalRequests,
   ] = await Promise.all([
     loadLatest<Row[]>("users_"),
     loadLatest<Row[]>("services_"),
@@ -61,6 +69,10 @@ export async function seedDatabase(): Promise<void> {
     loadLatest<Row[]>("quotations_"),
     loadLatest<Row[]>("notifications_"),
     loadLatest<Row[]>("cashback_transactions_"),
+    loadLatest<Row[]>("agents_"),
+    loadLatest<Row[]>("commissions_"),
+    loadLatest<Row[]>("agent_broadcasts_"),
+    loadLatest<Row[]>("withdrawal_requests_"),
   ]);
 
   // ── Users ──────────────────────────────────────────────────────────────────
@@ -220,6 +232,84 @@ export async function seedDatabase(): Promise<void> {
         referrerId: Number(referrer.id),
         referredUserId: Number(user.id),
         cashbackEarned: "0",
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Agents ─────────────────────────────────────────────────────────────────
+  for (const a of agents ?? []) {
+    await db
+      .insert(agentsTable)
+      .values({
+        id: Number(a.id),
+        userId: Number(a.user_id),
+        agentId: String(a.agent_id),
+        status: String(a.status) as "pending" | "active" | "suspended",
+        badge: String(a.badge) as "bronze" | "silver" | "gold" | "platinum" | "elite",
+        totalSales: Number(a.total_sales ?? 0),
+        totalCustomers: Number(a.total_customers ?? 0),
+        totalCommission: String(a.total_commission ?? "0"),
+        commissionBalance: String(a.commission_balance ?? "0"),
+        commissionRate: String(a.commission_rate ?? "5.00"),
+        points: Number(a.points ?? 0),
+        rankPosition: a.rank_position ? Number(a.rank_position) : null,
+        notes: a.notes ? String(a.notes) : null,
+        createdAt: new Date(String(a.created_at)),
+        updatedAt: new Date(String(a.updated_at)),
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Commissions ────────────────────────────────────────────────────────────
+  for (const c of commissions ?? []) {
+    await db
+      .insert(commissionsTable)
+      .values({
+        id: Number(c.id),
+        agentId: Number(c.agent_id),
+        quotationId: Number(c.quotation_id),
+        customerId: Number(c.customer_id),
+        amount: String(c.amount),
+        rate: String(c.rate),
+        status: String(c.status ?? "pending"),
+        description: String(c.description),
+        createdAt: new Date(String(c.created_at)),
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Agent Broadcasts ───────────────────────────────────────────────────────
+  for (const b of agentBroadcasts ?? []) {
+    await db
+      .insert(agentBroadcastsTable)
+      .values({
+        id: Number(b.id),
+        title: String(b.title),
+        message: String(b.message),
+        sentBy: Number(b.sent_by),
+        isActive: Boolean(b.is_active ?? true),
+        createdAt: new Date(String(b.created_at)),
+      })
+      .onConflictDoNothing();
+  }
+
+  // ── Withdrawal Requests ────────────────────────────────────────────────────
+  for (const w of withdrawalRequests ?? []) {
+    await db
+      .insert(withdrawalRequestsTable)
+      .values({
+        id: Number(w.id),
+        userId: Number(w.user_id),
+        requestType: String(w.request_type ?? "customer"),
+        amount: String(w.amount),
+        bankName: String(w.bank_name),
+        accountName: String(w.account_name),
+        accountNumber: String(w.account_number),
+        status: String(w.status ?? "pending"),
+        adminNotes: w.admin_notes ? String(w.admin_notes) : null,
+        processedAt: w.processed_at ? new Date(String(w.processed_at)) : null,
+        createdAt: new Date(String(w.created_at)),
+        updatedAt: new Date(String(w.updated_at)),
       })
       .onConflictDoNothing();
   }
