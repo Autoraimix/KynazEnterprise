@@ -45,8 +45,8 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/kynaz && PORT=8080 BASE_PATH=/ pnpm run dev"
-waitForPort = 8080
+args = "cd artifacts/kynaz && PORT=5000 BASE_PATH=/ pnpm run dev"
+waitForPort = 5000
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
@@ -71,6 +71,10 @@ externalPort = 80
 [[ports]]
 localPort = 19900
 externalPort = 3000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
 
 [nix]
 channel = "stable-25_05"
