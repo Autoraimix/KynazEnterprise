@@ -4,21 +4,50 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Kynaz Enterprise Portal</title>
-    <meta name="description" content="Kynaz Enterprise Portal — built on Replit. Update this description to reflect the app." />
+    <meta name="description" content="Kynaz Enterprise Portal — Malaysia's integrated insurance, takaful, and road tax service portal." />
     <meta name="robots" content="index, follow" />
     <meta property="og:title" content="Kynaz Enterprise Portal" />
-    <meta property="og:description" content="Kynaz Enterprise Portal — built on Replit. Update this description to reflect the app." />
+    <meta property="og:description" content="Malaysia's trusted insurance, takaful, and road tax service portal." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Kynaz Enterprise Portal" />
-    <meta name="twitter:description" content="Kynaz Enterprise Portal — built on Replit. Update this description to reflect the app." />
+    <meta name="twitter:description" content="Malaysia's trusted insurance, takaful, and road tax service portal." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      #google_translate_element { display: inline-block; }
+      .goog-te-banner-frame { display: none !important; }
+      body { top: 0 !important; }
+      .skiptranslate { display: none !important; }
+      .goog-te-gadget { font-size: 0 !important; }
+      .goog-te-gadget > span { display: none !important; }
+      .goog-te-gadget select {
+        font-size: 13px !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        padding: 4px 6px !important;
+        background: #fff !important;
+        cursor: pointer !important;
+        outline: none !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="google_translate_element" style="position:fixed;bottom:20px;right:20px;z-index:9999;background:#fff;border-radius:8px;padding:6px 8px;box-shadow:0 2px 12px rgba(0,0,0,0.18);"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,ms',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

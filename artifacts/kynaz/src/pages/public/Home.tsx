@@ -25,7 +25,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden py-24 lg:py-32">
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-40"
+          className="absolute inset-0 bg-cover bg-center opacity-60"
           style={{ backgroundImage: `url(${bannerBg})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/70 to-primary/50" />

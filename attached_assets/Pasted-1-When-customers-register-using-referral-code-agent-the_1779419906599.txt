@@ -1,0 +1,22 @@
+1. When customers register using referral code agent, the new customers does not shown on the list /agent/customers on this page
+
+2. /agent/commissions on this page, agents can only request for withdrawal if balance have atleast RM50.00 by clicking button request and provide their bank details. Then agent request it, admin can approve this request, admin can do the bank in manually, and update on the system completed the cashback. something like this. Same flow if customer request same goes like this.
+
+3. ensure on this page /agent/quotations, /agent/customers and /agent/ranking max data shown is 10 per page provided with next and back button. Ensure that all page that have list of data, max data shown is 10 per page. 
+But for /agent/ranking page, ensure that the top three is highlighted same as in /admin/leaderboard to differentiate between the rest. The top 3 no need to be on rest of the list anymore because it has been mentioned at the top right, for now we can see it like podium. 
+
+4. For platinum badge, need to have special medal icon. Maybe you can suggest for this. because platinum is higher than gold badge right. 
+
+5. /admin/cashback on this page, what is the manual adjustment for? can you help to explain, and what can it do? explain and apply the function properly. 
+
+6. When view or use the system with mobile, i get this view when clicking the burger menu either im using as super admin, admin, customer all got the same. Please fix this, please refer the image. 
+
+
+7. One Hero Banner Visibility please change the opacity image from 40% -> 60% so the background photo have better visibility and ensure the text is readable.
+
+8. For language change selection function, can you use something that have in browser, for example when user click translate in browser in translate all the language use in the page to the selection of language that user want. i want something similar to this which will translate all and everything to Bahasa Melayu if selected. 
+
+
+9. Can you help to change Kynaz Enterprise phone number to be +6013-272 7237, make this phone number is reflected on all page. Footer, WhatsApp number, admin phone number. 
+
+10. I notice that, why on this page /admin, Super Admin and Manage Users is in yellow color? make it black like others please. Thanks

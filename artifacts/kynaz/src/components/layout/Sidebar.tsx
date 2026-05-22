@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLocation as useWouterLocation } from "wouter";
 
-export function Sidebar({ userRole }: { userRole: string }) {
+export function Sidebar({ userRole, onNavClick }: { userRole: string; onNavClick?: () => void }) {
   const [location] = useLocation();
   const [, setLocation] = useWouterLocation();
   const { logout } = useAuth();
@@ -82,7 +82,7 @@ export function Sidebar({ userRole }: { userRole: string }) {
   return (
     <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground">
       <div className="p-6">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3" onClick={onNavClick}>
           <div className="w-8 h-8 bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center rounded font-serif font-bold">
             K
           </div>
@@ -96,16 +96,14 @@ export function Sidebar({ userRole }: { userRole: string }) {
         {links.map((link) => {
           const Icon = link.icon;
           const isActive = location === link.href || (location.startsWith(link.href + "/") && link.href !== "/dashboard" && link.href !== "/admin" && link.href !== "/superadmin");
-          const isSuperAdminLink = link.href.startsWith("/superadmin");
           return (
             <Link
               key={link.href}
               href={link.href}
+              onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : isSuperAdminLink
-                  ? "text-amber-400/80 hover:text-amber-400 hover:bg-sidebar-accent"
                   : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
               }`}
             >

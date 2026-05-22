@@ -44,7 +44,23 @@ export const agentBroadcastsTable = pgTable("agent_broadcasts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const withdrawalRequestsTable = pgTable("withdrawal_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  requestType: text("request_type").notNull().default("customer"),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  bankName: text("bank_name").notNull(),
+  accountName: text("account_name").notNull(),
+  accountNumber: text("account_number").notNull(),
+  status: text("status").notNull().default("pending"),
+  adminNotes: text("admin_notes"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertAgentSchema = createInsertSchema(agentsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type Agent = typeof agentsTable.$inferSelect;
 export type Commission = typeof commissionsTable.$inferSelect;
+export type WithdrawalRequest = typeof withdrawalRequestsTable.$inferSelect;

@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { eq, desc, and } from "drizzle-orm";
 import {
   db, usersTable, agentsTable, commissionsTable, quotationsTable,
-  servicesTable, notificationsTable, agentBroadcastsTable, settingsTable
+  servicesTable, notificationsTable, agentBroadcastsTable, settingsTable,
+  withdrawalRequestsTable
 } from "@workspace/db";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "../middlewares/auth";
 import { sendEmail, emailAgentWelcome } from "../lib/email";
@@ -405,6 +406,106 @@ router.post("/admin/agents/refresh-rankings", requireAdmin, async (_req, res): P
   }
 
   res.json({ message: `Rankings refreshed for ${agents.length} agents` });
+});
+
+// ── Agent: get own withdrawal history ─────────────────────────────────────────
+router.get("/agents/commissions/withdrawals", requireAgent, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const userId = req.userId!;
+  const requests = await db.select().from(withdrawalRequestsTable)
+    .where(and(eq(withdrawalRequestsTable.userId, userId), eq(withdrawalRequestsTable.requestType, "agent")))
+    .orderBy(desc(withdrawalRequestsTable.createdAt));
+  res.json(requests.map(r => ({ ...r, amount: parseFloat(r.amount) })));
+});
+
+// ── Agent: submit withdrawal request ──────────────────────────────────────────
+router.post("/agents/commissions/withdraw", requireAgent, async (req: AuthenticatedRequest, res): Promise<void> => {
+  const userId = req.userId!;
+  const [agent] = await db.select().from(agentsTable).where(eq(agentsTable.userId, userId));
+  if (!agent) { res.status(404).json({ error: "Agent not found" }); return; }
+
+  const { amount, bankName, accountName, accountNumber } = req.body;
+  const amountNum = parseFloat(amount);
+  if (isNaN(amountNum) || amountNum < 50) {
+    res.status(400).json({ error: "Minimum withdrawal amount is RM50" });
+    return;
+  }
+
+  const currentBalance = parseFloat(agent.commissionBalance);
+  if (amountNum > currentBalance) {
+    res.status(400).json({ error: "Insufficient commission balance" });
+    return;
+  }
+
+  if (!bankName || !accountName || !accountNumber) {
+    res.status(400).json({ error: "Bank name, account holder name, and account number are required" });
+    return;
+  }
+
+  const [request] = await db.insert(withdrawalRequestsTable).values({
+    userId,
+    requestType: "agent",
+    amount: amountNum.toFixed(2),
+    bankName,
+    accountName,
+    accountNumber,
+    status: "pending",
+  }).returning();
+
+  await db.update(agentsTable)
+    .set({ commissionBalance: (currentBalance - amountNum).toFixed(2), updatedAt: new Date() })
+    .where(eq(agentsTable.id, agent.id));
+
+  res.status(201).json({ ...request, amount: parseFloat(request.amount) });
+});
+
+// ── Admin: list all withdrawal requests ───────────────────────────────────────
+router.get("/admin/withdrawals", requireAdmin, async (_req, res): Promise<void> => {
+  const requests = await db.select().from(withdrawalRequestsTable)
+    .orderBy(desc(withdrawalRequestsTable.createdAt));
+  const users = await db.select().from(usersTable);
+  const userMap = new Map(users.map(u => [u.id, u]));
+  res.json(requests.map(r => ({
+    ...r,
+    amount: parseFloat(r.amount),
+    user: userMap.get(r.userId)
+      ? { id: userMap.get(r.userId)!.id, fullName: userMap.get(r.userId)!.fullName, email: userMap.get(r.userId)!.email, phone: userMap.get(r.userId)!.phone }
+      : null,
+  })));
+});
+
+// ── Admin: update withdrawal request status ────────────────────────────────────
+router.patch("/admin/withdrawals/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const { status, adminNotes } = req.body;
+  if (!status) { res.status(400).json({ error: "status required" }); return; }
+
+  const [existing] = await db.select().from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Withdrawal request not found" }); return; }
+
+  if (status === "rejected" && existing.status === "pending") {
+    if (existing.requestType === "agent") {
+      const [agent] = await db.select().from(agentsTable).where(eq(agentsTable.userId, existing.userId));
+      if (agent) {
+        const restored = (parseFloat(agent.commissionBalance) + parseFloat(existing.amount)).toFixed(2);
+        await db.update(agentsTable).set({ commissionBalance: restored, updatedAt: new Date() }).where(eq(agentsTable.id, agent.id));
+      }
+    } else {
+      const restored = await db.select().from(usersTable).where(eq(usersTable.id, existing.userId));
+      if (restored.length > 0) {
+        const newBal = (parseFloat(restored[0]!.cashbackBalance) + parseFloat(existing.amount)).toFixed(2);
+        await db.update(usersTable).set({ cashbackBalance: newBal, updatedAt: new Date() }).where(eq(usersTable.id, existing.userId));
+      }
+    }
+  }
+
+  const updateData: Partial<typeof withdrawalRequestsTable.$inferInsert> = { status: status as string, updatedAt: new Date() };
+  if (adminNotes != null) updateData.adminNotes = adminNotes;
+  if (status === "completed" || status === "approved") updateData.processedAt = new Date();
+
+  const [updated] = await db.update(withdrawalRequestsTable).set(updateData).where(eq(withdrawalRequestsTable.id, id)).returning();
+  res.json({ ...updated, amount: parseFloat(updated.amount) });
 });
 
 // Admin — send broadcast to agents

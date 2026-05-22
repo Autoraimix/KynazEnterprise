@@ -51,7 +51,7 @@ export default function Contact() {
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
                 <h2 className="text-2xl font-serif font-bold text-foreground mb-6">Get in Touch</h2>
                 {[
-                  { icon: Phone, title: "Phone", info: "+6019-359 0501", sub: "Mon-Fri, 9am-6pm" },
+                  { icon: Phone, title: "Phone", info: "+6013-272 7237", sub: "Mon-Fri, 9am-6pm" },
                   { icon: Mail, title: "Email", info: "info@kynaz.com.my", sub: "Response within 24 hours" },
                   { icon: MapPin, title: "Office", info: "Kuala Lumpur, Malaysia", sub: "By appointment" },
                 ].map(item => (
@@ -68,7 +68,7 @@ export default function Contact() {
                 ))}
 
                 <a
-                  href="https://wa.me/60193590501"
+                  href="https://wa.me/60132727237"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-4 bg-[#25D366] text-white rounded-xl hover:bg-[#20b954] transition-colors"

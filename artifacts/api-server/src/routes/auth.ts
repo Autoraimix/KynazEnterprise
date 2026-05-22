@@ -85,7 +85,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       phone,
       passwordHash,
       referralCode: newCode,
-      referredByCode: referralCode ?? null,
+      referredByCode: referralCode ? referralCode.toUpperCase().trim() : null,
       role: "customer",
       cashbackBalance: "0.00",
       isVerified: false,
