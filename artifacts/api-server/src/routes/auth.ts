@@ -12,7 +12,7 @@ import { sendEmail, STAFF_EMAIL, emailWelcomeCustomer, emailStaffNewUser } from 
 const router: IRouter = Router();
 
 function hashPassword(password: string): string {
-  const salt = "kynaz_salt_2024";
+  const salt = process.env.PASSWORD_SALT ?? "kynaz_salt_2024";
   return createHash("sha256").update(password + salt).digest("hex");
 }
 
@@ -21,8 +21,9 @@ function generateReferralCode(): string {
 }
 
 function generateToken(userId: number): string {
+  const secret = process.env.SESSION_SECRET ?? "kynaz_secret";
   return createHash("sha256")
-    .update(`${userId}:${Date.now()}:kynaz_secret`)
+    .update(`${userId}:${Date.now()}:${secret}`)
     .digest("hex");
 }
 
