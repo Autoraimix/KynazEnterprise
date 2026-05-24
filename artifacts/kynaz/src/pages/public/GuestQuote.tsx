@@ -1,5 +1,7 @@
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { useListServices, useGetQuotationSpeedSetting } from "@workspace/api-client-react";
+import { useListServices, useGetQuotationSpeedSetting, getListServicesQueryKey } from "@workspace/api-client-react";
+import type { Service } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -127,6 +129,7 @@ const HOME_PLANS = [
 ];
 
 export default function GuestQuote() {
+  const queryClient = useQueryClient();
   const { data: services, isLoading: loadingServices } = useListServices();
   const { data: speedSetting } = useGetQuotationSpeedSetting();
   const { toast } = useToast();
@@ -136,10 +139,18 @@ export default function GuestQuote() {
   const itineraryRef = useRef<HTMLInputElement>(null);
   const [itineraryFileName, setItineraryFileName] = useState<string | null>(null);
 
+  // Resolve initial serviceId from URL slug, using the React Query cache synchronously
+  const _initialServiceId = (() => {
+    const slug = new URLSearchParams(window.location.search).get("service");
+    if (!slug) return "";
+    const cached = queryClient.getQueryData<Service[]>(getListServicesQueryKey());
+    return cached?.find(s => s.slug === slug)?.id.toString() ?? "";
+  })();
+
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      serviceId: "", insuranceProvider: "", fullName: "", phone: "", email: "",
+      serviceId: _initialServiceId, insuranceProvider: "", fullName: "", phone: "", email: "",
       icNumber: "", address: "", plateNumber: "", vehicleModel: "",
       vehicleYear: "", roadtaxExpiry: "", naturalDisasterProtection: "",
       windscreenProtection: "", travelDestination: "", travelGroupType: "",
@@ -161,12 +172,18 @@ export default function GuestQuote() {
   const searchStr = useSearch();
 
   useEffect(() => {
-    if (!services || !searchStr) return;
-    const params = new URLSearchParams(searchStr);
+    if (!services?.length) return;
+    const params = new URLSearchParams(window.location.search);
     const slug = params.get("service");
     if (!slug) return;
     const svc = services.find(s => s.slug === slug);
-    if (svc) form.setValue("serviceId", svc.id.toString());
+    if (!svc) return;
+    const id = svc.id.toString();
+    if (form.getValues("serviceId") === id) return;
+    form.reset(
+      { ...form.getValues(), serviceId: id },
+      { keepDirtyValues: false }
+    );
   }, [services, searchStr]);
 
   const watchedServiceId = form.watch("serviceId");
@@ -561,6 +578,15 @@ export default function GuestQuote() {
                   {isTravel && (
                     <motion.div key="travel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-5 overflow-hidden">
                       <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">Travel Details</h3>
+
+                      {/* Excluded countries notice */}
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 space-y-1">
+                        <p className="font-semibold flex items-center gap-2">⚠️ Countries Not Covered</p>
+                        <p className="text-amber-800 leading-relaxed">
+                          Coverage is <strong>not available</strong> for travel to the following countries:{" "}
+                          Afghanistan, Antarctica, Belarus, Cuba, Libya, Iran, Iraq, Israel, Myanmar, Nepal, North Korea, Palestine, Russia, Syria, Sudan, South Sudan, Ukraine, and Venezuela.
+                        </p>
+                      </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <FormField control={form.control} name="travelDestination" render={({ field }) => (
                           <FormItem>

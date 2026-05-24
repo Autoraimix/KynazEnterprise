@@ -171,14 +171,6 @@ export default function Login() {
           <p className="text-white/70 text-lg max-w-xs leading-relaxed">
             Your trusted partner for insurance, takaful & compliance services in Malaysia.
           </p>
-          <div className="mt-10 grid grid-cols-3 gap-4 text-center">
-            {[{ val: "10K+", label: "Customers" }, { val: "99%", label: "Satisfaction" }, { val: "10+", label: "Services" }].map(item => (
-              <div key={item.label} className="bg-white/10 rounded-xl p-4">
-                <div className="text-2xl font-bold text-secondary">{item.val}</div>
-                <div className="text-white/60 text-xs mt-1">{item.label}</div>
-              </div>
-            ))}
-          </div>
           <div className="mt-8 flex items-center gap-2 justify-center text-white/50 text-sm">
             <Shield size={14} />
             <span>OTP-secured login</span>
