@@ -11,6 +11,7 @@ interface AuthContextType {
   idleWarning: boolean;
   login: (auth: AuthResult) => void;
   logout: () => void;
+  updateUser: (user: User) => void;
   resetIdle: () => void;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
@@ -90,6 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIdleWarning(false);
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem("kynaz_user", JSON.stringify(updatedUser));
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -107,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = () => user?.role === "superadmin";
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, idleWarning, login, logout, resetIdle, isAdmin, isSuperAdmin }}>
+    <AuthContext.Provider value={{ user, token, isLoading, idleWarning, login, logout, updateUser, resetIdle, isAdmin, isSuperAdmin }}>
       {children}
     </AuthContext.Provider>
   );

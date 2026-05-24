@@ -66,6 +66,10 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     cashbackBalance: parseFloat(user.cashbackBalance),
     isVerified: user.isVerified,
     isSuspended: user.isSuspended,
+    mustChangePassword: user.mustChangePassword,
+    bankName: user.bankName ?? null,
+    bankAccountNumber: user.bankAccountNumber ?? null,
+    bankAccountName: user.bankAccountName ?? null,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -689,6 +693,86 @@ router.post("/admin/settings/cashback-rate", requireAdmin, async (req, res): Pro
   }
 
   res.json({ rate: parsed });
+});
+
+// Create user (customer or agent only — admins cannot create admins/superadmins)
+router.post("/admin/users", requireAdmin, async (req: AuthenticatedRequest, res): Promise<void> => {
+  try {
+    const { fullName, email, phone, password, role } = req.body as {
+      fullName: string; email: string; phone: string; password: string;
+      role: "customer" | "agent";
+    };
+
+    if (!fullName || !email || !phone || !password) {
+      res.status(400).json({ error: "All fields are required" });
+      return;
+    }
+
+    if (role !== "customer" && role !== "agent") {
+      res.status(403).json({ error: "Admin can only create customer or agent accounts" });
+      return;
+    }
+
+    const { createHash, randomBytes } = await import("crypto");
+    const hashPw = (pw: string) => createHash("sha256").update(pw + (process.env.PASSWORD_SALT ?? "kynaz_salt_2024")).digest("hex");
+    const genCode = () => randomBytes(4).toString("hex").toUpperCase();
+
+    const { or } = await import("drizzle-orm");
+    const existing = await db.select({ id: usersTable.id, email: usersTable.email, phone: usersTable.phone })
+      .from(usersTable)
+      .where(or(eq(usersTable.email, email), eq(usersTable.phone, phone)));
+
+    if (existing.length > 0) {
+      const emailTaken = existing.some(u => u.email === email);
+      res.status(400).json({ error: emailTaken ? "This email is already registered" : "This phone number is already registered" });
+      return;
+    }
+
+    const referralCode = genCode();
+    const { agentsTable } = await import("@workspace/db");
+
+    const [user] = await db.insert(usersTable).values({
+      fullName,
+      email,
+      phone,
+      passwordHash: hashPw(password),
+      role,
+      referralCode,
+      cashbackBalance: "0.00",
+      isVerified: true,
+      isSuspended: false,
+      mustChangePassword: true,
+      updatedAt: new Date(),
+    }).returning();
+
+    if (role === "agent") {
+      const agentId = `KYN-AGT-${String(user.id).padStart(4, "0")}`;
+      await db.insert(agentsTable).values({
+        userId: user.id,
+        agentId,
+        status: "active",
+        badge: "bronze",
+        commissionRate: "5.00",
+        updatedAt: new Date(),
+      }).onConflictDoNothing();
+    }
+
+    const { emailWelcomeCreatedByAdmin } = await import("../lib/email");
+    sendEmail({
+      to: email,
+      subject: "Your Kynaz Enterprise Account Has Been Created",
+      html: emailWelcomeCreatedByAdmin({ name: fullName, email, tempPassword: password, role, referralCode }),
+    }).catch(() => {});
+
+    res.status(201).json(formatUser(user));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("unique")) {
+      res.status(400).json({ error: "Email or phone already registered" });
+    } else {
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  }
 });
 
 // Testimonials

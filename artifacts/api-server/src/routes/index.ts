@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import agentsRouter from "./agents";
 import superadminRouter from "./superadmin";
 import analyticsRouter from "./analytics";
+import profileRouter from "./profile";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(adminRouter);
 router.use(agentsRouter);
 router.use(superadminRouter);
 router.use(analyticsRouter);
+router.use(profileRouter);
 
 export default router;

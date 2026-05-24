@@ -17,6 +17,7 @@ import GuestQuote from "@/pages/public/GuestQuote";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ChangePassword from "@/pages/auth/ChangePassword";
 
 import Dashboard from "@/pages/dashboard/Dashboard";
 import Quotations from "@/pages/dashboard/Quotations";
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/change-password" component={ChangePassword} />
 
       {/* Customer dashboard routes */}
       <Route path="/dashboard" component={Dashboard} />

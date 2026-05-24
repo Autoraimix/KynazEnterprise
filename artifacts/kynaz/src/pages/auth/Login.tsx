@@ -128,6 +128,11 @@ export default function Login() {
       if (result.user && result.token) {
         login({ user: result.user as Parameters<typeof login>[0]["user"], token: result.token });
         toast({ title: "Welcome back!", description: `Signed in as ${result.user.fullName}` });
+        const extResult = result as typeof result & { mustChangePassword?: boolean };
+        if (extResult.mustChangePassword) {
+          setLocation("/change-password");
+          return;
+        }
         const role = result.user.role;
         if (role === "superadmin") setLocation("/superadmin");
         else if (role === "admin") setLocation("/admin");

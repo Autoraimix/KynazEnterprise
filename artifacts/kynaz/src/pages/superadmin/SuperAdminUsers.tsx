@@ -48,7 +48,7 @@ export default function SuperAdminUsers() {
   const [editingUser, setEditingUser] = useState<SuperUser | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [createForm, setCreateForm] = useState({ fullName: "", email: "", phone: "", password: "", role: "customer" });
-  const [editForm, setEditForm] = useState({ fullName: "", phone: "", role: "customer", isSuspended: false, isVerified: false });
+  const [editForm, setEditForm] = useState({ fullName: "", email: "", phone: "", role: "customer", isSuspended: false, isVerified: false });
 
   const token = () => localStorage.getItem("kynaz_token") ?? "";
 
@@ -131,7 +131,7 @@ export default function SuperAdminUsers() {
 
   const openEdit = (user: SuperUser) => {
     setEditingUser(user);
-    setEditForm({ fullName: user.fullName, phone: user.phone, role: user.role, isSuspended: user.isSuspended, isVerified: user.isVerified });
+    setEditForm({ fullName: user.fullName, email: user.email, phone: user.phone, role: user.role, isSuspended: user.isSuspended, isVerified: user.isVerified });
   };
 
   const handleSaveEdit = async () => {
@@ -139,7 +139,7 @@ export default function SuperAdminUsers() {
     const res = await fetch(`/api/superadmin/users/${editingUser.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-      body: JSON.stringify(editForm),
+      body: JSON.stringify({ ...editForm }),
     });
     if (res.ok) {
       toast({ title: "User updated", description: `${editForm.fullName}'s details have been saved.` });
@@ -280,9 +280,6 @@ export default function SuperAdminUsers() {
           {editingUser && (
             <div className="space-y-4 py-1">
               <div className="bg-muted/40 rounded-lg p-3 space-y-1 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail size={13} /> <span className="font-medium text-foreground">{editingUser.email}</span>
-                </div>
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <Shield size={12} /> Referral: {editingUser.referralCode}
                   &nbsp;·&nbsp; Cashback: RM {editingUser.cashbackBalance.toFixed(2)}
@@ -293,6 +290,12 @@ export default function SuperAdminUsers() {
                 <div className="col-span-2">
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Full Name</label>
                   <Input value={editForm.fullName} onChange={e => setEditForm(f => ({ ...f, fullName: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block flex items-center gap-1">
+                    <Mail size={11} /> Email Address
+                  </label>
+                  <Input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Phone</label>

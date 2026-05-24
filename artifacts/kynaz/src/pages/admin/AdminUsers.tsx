@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Search, Shield, ShieldOff, CheckCircle2, XCircle, Pencil, X, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Search, Shield, ShieldOff, CheckCircle2, XCircle, Pencil, X, Save, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -14,7 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +34,16 @@ const editSchema = z.object({
 
 type EditData = z.infer<typeof editSchema>;
 
+const createSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Enter a valid phone number"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["customer", "agent"]),
+});
+
+type CreateData = z.infer<typeof createSchema>;
+
 export default function AdminUsers() {
   const { data: users, isLoading } = useListAdminUsers();
   const suspendMutation = useSuspendUser();
@@ -39,6 +53,8 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const filtered = users?.filter(u =>
     !search ||
@@ -51,19 +67,24 @@ export default function AdminUsers() {
 
   const handleSearch = (v: string) => { setSearch(v); setPage(0); };
 
-  const form = useForm<EditData>({
+  const editForm = useForm<EditData>({
     resolver: zodResolver(editSchema),
     defaultValues: { fullName: "", phone: "" },
   });
 
+  const createForm = useForm<CreateData>({
+    resolver: zodResolver(createSchema),
+    defaultValues: { fullName: "", email: "", phone: "", password: "", role: "customer" },
+  });
+
   const openEdit = (user: User) => {
     setEditingUser(user);
-    form.reset({ fullName: user.fullName, phone: user.phone });
+    editForm.reset({ fullName: user.fullName, phone: user.phone });
   };
 
   const closeEdit = () => {
     setEditingUser(null);
-    form.reset();
+    editForm.reset();
   };
 
   const onEditSubmit = (data: EditData) => {
@@ -78,6 +99,31 @@ export default function AdminUsers() {
         toast({ title: "Error", description: "Failed to update user.", variant: "destructive" });
       },
     });
+  };
+
+  const onCreateSubmit = async (data: CreateData) => {
+    setCreating(true);
+    try {
+      const token = localStorage.getItem("kynaz_token") ?? "";
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json() as { error?: string };
+      if (!res.ok) {
+        toast({ title: "Error", description: result.error ?? "Failed to create user.", variant: "destructive" });
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: getListAdminUsersQueryKey() });
+      toast({ title: "User created!", description: `${data.fullName} has been created. They will be asked to set a password on first login.` });
+      setShowCreate(false);
+      createForm.reset();
+    } catch {
+      toast({ title: "Error", description: "Network error.", variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleToggleSuspend = (id: number, name: string, currentlySuspended: boolean) => {
@@ -97,9 +143,15 @@ export default function AdminUsers() {
   return (
     <AdminLayout>
       <div className="max-w-6xl space-y-6">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-serif font-bold text-foreground">User Management</h1>
-          <p className="text-muted-foreground text-sm mt-1">{users?.length ?? 0} registered users</p>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-serif font-bold text-foreground">User Management</h1>
+            <p className="text-muted-foreground text-sm mt-1">{users?.length ?? 0} registered users</p>
+          </div>
+          <Button onClick={() => setShowCreate(true)} className="gap-2 bg-primary text-white">
+            <Plus size={16} /> Create User
+          </Button>
         </motion.div>
 
         <div className="relative">
@@ -226,14 +278,14 @@ export default function AdminUsers() {
             </DialogDescription>
           </DialogHeader>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4 mt-2">
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4 mt-2">
               <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1">
-                <div className="text-xs text-muted-foreground">Email (cannot be changed)</div>
+                <div className="text-xs text-muted-foreground">Email (cannot be changed here)</div>
                 <div className="font-medium text-foreground">{editingUser?.email}</div>
               </div>
 
-              <FormField control={form.control} name="fullName" render={({ field }) => (
+              <FormField control={editForm.control} name="fullName" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
@@ -243,7 +295,7 @@ export default function AdminUsers() {
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="phone" render={({ field }) => (
+              <FormField control={editForm.control} name="phone" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
@@ -262,6 +314,75 @@ export default function AdminUsers() {
                   {updateMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreate} onOpenChange={open => { if (!open) { setShowCreate(false); createForm.reset(); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Create New User</DialogTitle>
+            <DialogDescription>
+              Create a customer or agent account. The user will be prompted to change their password on first login.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...createForm}>
+            <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4 mt-2">
+              <FormField control={createForm.control} name="fullName" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl><Input placeholder="Full name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={createForm.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={createForm.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl><Input placeholder="0123456789" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={createForm.control} name="password" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Temporary Password</FormLabel>
+                  <FormControl><Input type="password" placeholder="Min. 6 characters" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={createForm.control} name="role" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <DialogFooter className="pt-2">
+                <Button type="button" variant="outline" onClick={() => { setShowCreate(false); createForm.reset(); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-primary text-white" disabled={creating}>
+                  {creating ? "Creating…" : "Create User"}
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
         </DialogContent>

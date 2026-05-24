@@ -37,6 +37,10 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     cashbackBalance: parseFloat(user.cashbackBalance),
     isVerified: user.isVerified,
     isSuspended: user.isSuspended,
+    mustChangePassword: user.mustChangePassword,
+    bankName: user.bankName ?? null,
+    bankAccountNumber: user.bankAccountNumber ?? null,
+    bankAccountName: user.bankAccountName ?? null,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
@@ -124,6 +128,7 @@ router.post("/superadmin/users", requireSuperAdmin, async (req: AuthenticatedReq
       cashbackBalance: "0.00",
       isVerified: true,
       isSuspended: false,
+      mustChangePassword: true,
       updatedAt: new Date(),
     }).returning();
 
@@ -168,8 +173,8 @@ router.post("/superadmin/users", requireSuperAdmin, async (req: AuthenticatedReq
 router.patch("/superadmin/users/:id", requireSuperAdmin, async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
     const id = Number(req.params.id);
-    const { fullName, phone, role, isSuspended, isVerified } = req.body as {
-      fullName?: string; phone?: string;
+    const { fullName, phone, email, role, isSuspended, isVerified } = req.body as {
+      fullName?: string; phone?: string; email?: string;
       role?: "customer" | "agent" | "admin" | "superadmin";
       isSuspended?: boolean; isVerified?: boolean;
     };
@@ -178,9 +183,20 @@ router.patch("/superadmin/users/:id", requireSuperAdmin, async (req: Authenticat
     const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, id));
     if (!currentUser) { res.status(404).json({ error: "User not found" }); return; }
 
+    if (email && email !== currentUser.email) {
+      const [emailConflict] = await db.select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, email));
+      if (emailConflict) {
+        res.status(400).json({ error: "This email is already taken" });
+        return;
+      }
+    }
+
     const updateData: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
     if (fullName !== undefined) updateData.fullName = fullName;
     if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
     if (role !== undefined) updateData.role = role;
     if (isSuspended !== undefined) updateData.isSuspended = isSuspended;
     if (isVerified !== undefined) updateData.isVerified = isVerified;
@@ -252,7 +268,7 @@ router.post("/superadmin/users/:id/reset-password", requireSuperAdmin, async (re
   }
 
   const [user] = await db.update(usersTable)
-    .set({ passwordHash: hashPassword(tempPassword), updatedAt: new Date() })
+    .set({ passwordHash: hashPassword(tempPassword), mustChangePassword: true, updatedAt: new Date() })
     .where(eq(usersTable.id, id))
     .returning();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }

@@ -42,6 +42,10 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     cashbackBalance: parseFloat(user.cashbackBalance),
     isVerified: user.isVerified,
     isSuspended: user.isSuspended,
+    mustChangePassword: user.mustChangePassword,
+    bankName: user.bankName ?? null,
+    bankAccountNumber: user.bankAccountNumber ?? null,
+    bankAccountName: user.bankAccountName ?? null,
     createdAt: user.createdAt.toISOString(),
   };
 }

@@ -16,6 +16,10 @@ export const usersTable = pgTable("users", {
   cashbackBalance: numeric("cashback_balance", { precision: 10, scale: 2 }).notNull().default("0"),
   isVerified: boolean("is_verified").notNull().default(false),
   isSuspended: boolean("is_suspended").notNull().default(false),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  bankName: text("bank_name"),
+  bankAccountNumber: text("bank_account_number"),
+  bankAccountName: text("bank_account_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
