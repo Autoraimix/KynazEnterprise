@@ -48,6 +48,8 @@ export function Sidebar({
   const isSuperAdmin = userRole === "superadmin";
   const isAgent = userRole === "agent";
 
+  const logoHref = isAdmin ? (isSuperAdmin ? "/superadmin" : "/admin") : isAgent ? "/agent" : "/dashboard";
+
   const handleLogout = () => {
     logout();
     setLocation("/");
@@ -102,14 +104,12 @@ export function Sidebar({
     <div className="h-full flex flex-col bg-background text-foreground">
       <div className="p-5 flex items-center justify-between">
         <Link
-          href="/"
+          href={logoHref}
           className="flex items-center gap-3"
           onClick={onNavClick}
         >
-          <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center rounded font-serif font-bold shrink-0">
-            K
-          </div>
-          <span className="font-serif font-bold text-xl text-foreground">
+          <img src="/logo.png" alt="KYNAZ" className="h-8 w-auto object-contain shrink-0" />
+          <span className="font-bold text-xl text-foreground">
             {portalLabel}
           </span>
         </Link>

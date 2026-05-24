@@ -5,7 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { PageTransition } from "../PageTransition";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoUrl from "@assets/Kynaz_Enterprise_Logo_1778916756969.jpeg";
+const logoUrl = "/logo.png";
 
 export function ProtectedLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();

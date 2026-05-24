@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import logoUrl from "@assets/Kynaz_Enterprise_Logo_1778916756969.jpeg";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,10 +31,18 @@ export function PublicNavbar() {
     setIsMobileMenuOpen(false);
   };
 
+  const handleLangToggle = () => {
+    const next = lang === "en" ? "bm" : "en";
+    toggleLang();
+    const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+    if (select) {
+      select.value = next === "bm" ? "ms" : "";
+      select.dispatchEvent(new Event("change"));
+    }
+  };
+
   const links = [
     { href: "/", labelKey: "nav.home" },
-    { href: "/services", labelKey: "nav.services" },
-    { href: "/about", labelKey: "nav.about" },
     { href: "/contact", labelKey: "nav.contact" },
   ];
 
@@ -43,9 +50,9 @@ export function PublicNavbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <img src={logoUrl} alt="Kynaz Enterprise" className="h-11 w-auto object-contain" />
-          <span className="font-serif font-bold text-xl text-primary hidden sm:inline-block">
-            Kynaz Enterprise
+          <img src="/logo.png" alt="KYNAZ" className="h-11 w-auto object-contain" />
+          <span className="font-bold text-xl text-primary hidden sm:inline-block">
+            KYNAZ
           </span>
         </Link>
 
@@ -64,9 +71,8 @@ export function PublicNavbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          {/* Language toggle */}
           <button
-            onClick={toggleLang}
+            onClick={handleLangToggle}
             className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-muted-foreground"
             title="Toggle language / Tukar bahasa"
           >
@@ -76,7 +82,7 @@ export function PublicNavbar() {
 
           {user ? (
             <>
-              <Link href={user.role === "admin" || user.role === "superadmin" ? "/admin" : "/dashboard"}>
+              <Link href={user.role === "admin" || user.role === "superadmin" ? "/admin" : user.role === "agent" ? "/agent" : "/dashboard"}>
                 <Button variant="outline" className="border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground">
                   {t("nav.dashboard")}
                 </Button>
@@ -145,7 +151,7 @@ export function PublicNavbar() {
                 </Link>
               ))}
               <button
-                onClick={() => { toggleLang(); setIsMobileMenuOpen(false); }}
+                onClick={() => { handleLangToggle(); setIsMobileMenuOpen(false); }}
                 className="flex items-center gap-2 text-sm font-medium p-2 rounded-md text-muted-foreground hover:bg-muted/50"
               >
                 <Globe size={16} />
@@ -154,7 +160,7 @@ export function PublicNavbar() {
               <div className="h-px bg-border my-2" />
               {user ? (
                 <div className="flex flex-col gap-2">
-                  <Link href={user.role === "admin" || user.role === "superadmin" ? "/admin" : "/dashboard"} onClick={() => setIsMobileMenuOpen(false)}>
+                  <Link href={user.role === "admin" || user.role === "superadmin" ? "/admin" : user.role === "agent" ? "/agent" : "/dashboard"} onClick={() => setIsMobileMenuOpen(false)}>
                     <Button className="w-full justify-start bg-primary text-primary-foreground">{t("nav.dashboard")}</Button>
                   </Link>
                   <AlertDialog>

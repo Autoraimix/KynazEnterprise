@@ -1,0 +1,65 @@
+1. Help me to change icon of this website by reffering to this image  (logo.png). Ensure that this logo will be use as logo of the website,
+side menu logo, login page logo, register page logo, in apps logo, mobile apps logo, website logo, everything that include logo, used this logo uploaded. Including when user use on phone browser and add to their home screen, also will use this logo as well. Instead of showing Kynaz Enterprise wording. Use KYNAZ on every page apply for better and minimal looks. 
+
+2. Can you help to remove quick links section, services and contact and its content in footer. Please remove privacy policy and terms of services as well. I want to make this website minimal with minimal text.
+
+3. On home page, if user click on Services at the menu at the header, instead of opening another page, you just bring user to our services section in homepage. 
+Then remove services and about menu at the header and menu. 
+
+4. Please use font Font type: Sans serif, Inter is a sans serif typeface designed by former Figma designer Rasmus Andersson. Apply to all in the website thanks
+
+5. Malaysia's Trusted Insurance & Takaful Portal change to One of the Malaysia's Trusted Takaful Portal.
+
+6. Malaysia's most trusted integrated service portal for insurance, takaful, and compliance needs. Earn cashback on every transaction.
+change to One of Malaysia's most trusted integrated service portal for takaful, and compliance needs. Earn cashback on every transaction.
+
+7. For this scenario, where user on home page, user click on Road Tax Renewal at Our services, then user will directed to this page /services/road-tax-renewal.
+Then user click request quotation, for the Select service should auto Shown Road Tax Renewal so that user does not have to choose it again. Because previously user have already choose the type of insurance.
+Apply it to all services. then remove this page /services. 
+
+8. on this page /quote provide a button for user to whatsapp as well, so that if user want to continue directly with whatsapp it can whatsapp the admin directly with this template
+Hai Kynaz, saya ingin membuat pertanyaan mengenai:
+*title of the selected insurance*
+
+if it is in contact forms or no insurance is selected yet you can put this as template:
+Hai Kynaz, saya ingin membuat pertanyaan mengenai:
+Takaful dan Insurance yang kynaz provide. 
+
+
+9. On travel insurance please add this details as well for user to filled in
+a) Name of country: ______________ (list all the countries that you are planning to travel to) 
+* Countries that are not part of the coverage (Afghanistan, Antarctica, Belarus, Cuba, Libya, Iran, Iraq, Israel, Myanmar, Nepal, North Korea, Palestine, Russia, Syria, Sudan, South Sudan, Ukraine, and Venezuela) 
+b) Optional Add-Ons: 1. COVID-19 Add On Protect you comprehensively before you start your overseas trip, during and after you come back to Malaysia. *Senior Citizens over the age of 80 are not eligible for this add-on. 
+c). Extended Home Care Coverage Protects your home contents if they are damaged by burglary, fire, or water damage while your home is left vacant during your trip. Your base plan already provides coverage, and this add-on increases the limit for extra protection. Conditions applicable to this benefit: • The loss or damage caused by burglary, fire or water damage (due to bursting or overflowing of domestic water tanks, apparatus or pipes) during covered person’s trip. • Limit for single article/pair of article/set of articles not more than 1,000. • Home was left vacant during the trip/incident. • This benefit only applies to the main covered person for any one certificate (except for group purchase). 
+d). Golf Coverage Protects your golf equipment against theft or damage and reimburses unused prepaid green fees if you can't play due to injury. 
+e). Adventurous Activity Add On Cover death, permanent disability and medical expenses caused by an accident from participation in an adventurous activity during your trip. List of adventurous activities Water sports • Rafting • Canoeing and kayaking involving white water (grade 4 and below) • Rowing • Yachting • Parasailing • Surfing • Windsurfing (boardsailing) • Jet skiing • Scuba diving • Underwater activities with artificial breathing apparatus (up to 30 metres deep) Winter sports • Ice skating • Snowboarding • Skiing • Sledging • Snowmobiling Others • Mountaineering (no ropes) up to 3,500m or base camp • Rock climbing (with ropes) • Mountain hiking • Mountain trekking • Abseiling • Helicopter rides for sightseeing • Ultra-marathon • Motorcycle convoy • Skydiving • Hang gliding • Bungee jumping • Zorb ball riding • Sphereing • Orbing • Hot air balloon • All-terrain vehicle (ATV) *Any mountaineering or climbing activities in Nepal shall be excluded under this optional benefit. 
+Note: Terms, conditions, and exclusions apply to this certificate. 
+All the above activities are for amateurs and leisure purposes only. 
+f) If agree with the quotation price and would like to proceed, please provide the details of: 
+Departure flight Flight number:  
+Flight date:  
+If there is connecting flight 
+Flight number:  
+Flight date:  
+Return flight Flight number: 
+Flight date: 
+If there is connecting flight 
+Flight number:  
+Flight date:  
+
+10. Please remove this part on home page. I want this website to be minimal. please refer image (part to remove.png)
+
+11. Please fix on service popularity on the x axis, just shown simple words that can be understand, so that it does not intercept with each other please refer image. (service popularity chart.png)
+
+12. On contact page, please remove everything on that page and leave whatsapp us only with proper template writing and a button to contact via whatsapp. 
+
+13. For admin, superadmin and agent, when the click on the side menu icon or website icon it bring the dmin, superadmin and agent to default dashboard page not on homepage. because they dont want to use homepage. homepage mostly for the user/customer only. 
+
+14. if you find any +6019-359 0501 on the website including whatsapp number admin change it to +6013-272 7237
+and if you find hello@kynaz.com.my change it to admin@kynazenterprise.my
+and if you find (Suite 12.01, Level 12, Menara Kynaz, Jalan Sultan Ismail, 50250 Kuala Lumpur, Malaysia) this remove it. 
+
+15. Ensure the change language function is function as web browser translate function. where user click translate in web browser, it will translated everything that is possible to translate to selected language. 
+same goes to this function. ensure it translate all menu, all header, all body, all body content, all type of text in the sytem, all footer, all content in footer. 
+
+17. Remember The goals of this website is minimal for user to use and user friendly. The minimal the better for user/customers. 

@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Gift, ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 
 const schema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
@@ -36,7 +36,7 @@ export default function Register() {
     registerMutation.mutate({ data: { ...data, referralCode: data.referralCode || null } }, {
       onSuccess: (result) => {
         login(result);
-        toast({ title: "Account created!", description: "Welcome to Kynaz Enterprise. Start earning cashback today!" });
+        toast({ title: "Account created!", description: "Welcome to KYNAZ. Start earning cashback today!" });
         setLocation("/dashboard");
       },
       onError: (err: unknown) => {
@@ -60,10 +60,10 @@ export default function Register() {
           transition={{ duration: 0.7 }}
           className="relative z-10 text-center"
         >
-          <div className="w-20 h-20 bg-secondary/20 border border-secondary/40 rounded-2xl flex items-center justify-center mx-auto mb-8">
-            <Gift className="text-secondary" size={40} />
+          <div className="flex justify-center mb-8">
+            <img src="/logo.png" alt="KYNAZ" className="h-20 w-auto object-contain" />
           </div>
-          <h1 className="text-4xl font-serif font-bold text-white mb-4">Join Kynaz Today</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">Join KYNAZ Today</h1>
           <p className="text-white/70 text-lg max-w-xs leading-relaxed">
             Create your account and start earning cashback rewards on every service purchase.
           </p>
@@ -93,7 +93,6 @@ export default function Register() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          {/* Back button */}
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2 mb-6 text-muted-foreground hover:text-foreground -ml-2">
               <ArrowLeft size={16} /> Back to Home
@@ -101,11 +100,11 @@ export default function Register() {
           </Link>
 
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-serif font-bold text-white">K</div>
-            <span className="font-serif font-bold text-primary">Kynaz Enterprise</span>
+            <img src="/logo.png" alt="KYNAZ" className="h-8 w-auto object-contain" />
+            <span className="font-bold text-primary">KYNAZ</span>
           </div>
 
-          <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Create account</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Create account</h2>
           <p className="text-muted-foreground mb-8">Join thousands of members earning cashback</p>
 
           <Form {...form}>

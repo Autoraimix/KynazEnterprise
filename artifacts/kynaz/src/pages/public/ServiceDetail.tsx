@@ -40,7 +40,7 @@ export default function ServiceDetail() {
         <div className="container mx-auto px-4 py-16 max-w-4xl text-center">
           <FileText size={48} className="mx-auto mb-4 text-muted-foreground/40" />
           <h1 className="text-2xl font-serif font-bold text-foreground mb-2">{t("service.notFound")}</h1>
-          <Link href="/services">
+          <Link href="/">
             <Button variant="outline" className="gap-2 mt-4">
               <ArrowLeft size={16} /> {t("service.backToServices")}
             </Button>
@@ -51,14 +51,14 @@ export default function ServiceDetail() {
   }
 
   const IconComponent = iconMap[service.icon] ?? Shield;
-  const quotationHref = user ? "/dashboard/quotations/new" : "/quote";
+  const quotationHref = user ? "/dashboard/quotations/new" : `/quote?service=${slug}`;
 
   return (
     <PublicLayout>
       <section className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4 max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <Link href="/services">
+            <Link href="/">
               <Button variant="outline" size="sm" className="gap-2 mb-6">
                 <ArrowLeft size={16} /> {t("service.backToServices")}
               </Button>
@@ -148,7 +148,7 @@ export default function ServiceDetail() {
                 </Link>
                 <div className="mt-6 pt-4 border-t border-white/20">
                   <p className="text-white/60 text-xs text-center">{t("service.needHelp")}</p>
-                  <p className="text-white text-sm text-center font-semibold">+6019-359 0501</p>
+                  <p className="text-white text-sm text-center font-semibold">+6013-272 7237</p>
                 </div>
               </motion.div>
             </div>

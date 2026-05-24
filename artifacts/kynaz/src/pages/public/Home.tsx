@@ -1,7 +1,7 @@
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { ArrowRight, Car, Plane, Users, Home as HomeIcon, Shield, HardHat, Briefcase, Stethoscope, Heart, CreditCard, CheckCircle2, FileSearch } from "lucide-react";
+import { ArrowRight, Car, Plane, Users, Home as HomeIcon, Shield, HardHat, Briefcase, Stethoscope, Heart, CreditCard, FileSearch } from "lucide-react";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLanguage } from "@/context/LanguageContext";
@@ -65,20 +65,17 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Link href="/services">
-              <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full sm:w-auto h-14 px-8 text-base">
-                {t("home.hero.explore")}
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full sm:w-auto h-14 px-8 text-base"
+              onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              {t("home.hero.explore")}
+            </Button>
             <Link href="/quote">
               <Button size="lg" variant="outline" className="border-primary-foreground/30 hover:bg-primary-foreground/10 text-primary-foreground w-full sm:w-auto h-14 px-8 text-base gap-2">
                 <FileSearch size={18} />
                 {t("home.hero.quote")}
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button size="lg" variant="ghost" className="hover:bg-primary-foreground/10 text-primary-foreground/80 w-full sm:w-auto h-14 px-8 text-base">
-                {t("home.hero.register")}
               </Button>
             </Link>
           </motion.div>
@@ -86,7 +83,7 @@ export default function Home() {
       </section>
 
       {/* Services Grid */}
-      <section className="py-20 bg-background">
+      <section id="services" className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary mb-4">{t("home.services.title")}</h2>
@@ -119,72 +116,6 @@ export default function Home() {
                 </motion.div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* Guest Quote CTA */}
-      <section className="py-12 bg-secondary/5 border-y border-secondary/20">
-        <div className="container mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h3 className="text-2xl font-serif font-bold text-primary mb-3">{t("home.guestCta.title")}</h3>
-            <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-              {t("home.guestCta.desc")}
-            </p>
-            <Link href="/quote">
-              <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 h-12 px-8 gap-2">
-                <FileSearch size={18} />
-                {t("home.guestCta.btn")}
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Cashback Promo */}
-      <section className="py-20 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <div className="bg-primary rounded-3xl overflow-hidden shadow-2xl">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="p-10 md:p-16 flex flex-col justify-center">
-                <div className="inline-block px-4 py-1.5 bg-secondary/20 text-secondary border border-secondary/30 rounded-full text-sm font-medium mb-6 w-max">
-                  {t("home.cashback.badge")}
-                </div>
-                <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-foreground mb-6">
-                  {t("home.cashback.title")}
-                </h2>
-                <p className="text-primary-foreground/80 mb-8 text-lg">
-                  {t("home.cashback.desc")}
-                </p>
-
-                <div className="space-y-4 mb-10">
-                  <div className="flex items-center gap-3 text-primary-foreground/90">
-                    <CheckCircle2 className="text-secondary" />
-                    <span>{t("home.cashback.step1")}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-primary-foreground/90">
-                    <CheckCircle2 className="text-secondary" />
-                    <span>{t("home.cashback.step2")}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-primary-foreground/90">
-                    <CheckCircle2 className="text-secondary" />
-                    <span>{t("home.cashback.step3")}</span>
-                  </div>
-                </div>
-
-                <Link href="/register">
-                  <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 h-14 px-8 text-base">
-                    {t("home.cashback.btn")}
-                  </Button>
-                </Link>
-              </div>
-              <div
-                className="relative min-h-[400px] hidden lg:block bg-cover bg-center"
-                style={{ backgroundImage: `url(${bannerBg})` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-transparent"></div>
-              </div>
-            </div>
           </div>
         </div>
       </section>

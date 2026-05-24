@@ -196,7 +196,7 @@ export default function AdminInfographics() {
                   <BarChart data={data.servicePopularity} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="service" tick={{ fontSize: 10 }} width={120} />
+                    <YAxis type="category" dataKey="service" tick={{ fontSize: 10 }} width={100} tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v} />
                     <Tooltip />
                     <Bar dataKey="count" name="Quotations" radius={[0, 4, 4, 0]}>
                       {data.servicePopularity.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}

@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Shield, ArrowLeft, KeyRound, Mail, Lock, Clock } from "lucide-react";
+import { ArrowLeft, KeyRound, Mail, Lock, Clock, Shield } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -34,7 +34,6 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [otpResendCountdown, setOtpResendCountdown] = useState(0);
 
-  // Security: redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
       const role = user.role;
@@ -45,7 +44,6 @@ export default function Login() {
     }
   }, [user, isLoading, setLocation]);
 
-  // Show idle timeout message
   useEffect(() => {
     if (searchStr?.includes("reason=idle")) {
       toast({
@@ -56,7 +54,6 @@ export default function Login() {
     }
   }, []);
 
-  // Countdown for OTP resend
   useEffect(() => {
     if (otpResendCountdown <= 0) return;
     const t = setTimeout(() => setOtpResendCountdown(c => c - 1), 1000);
@@ -167,10 +164,10 @@ export default function Login() {
           transition={{ duration: 0.7 }}
           className="relative z-10 text-center"
         >
-          <div className="w-20 h-20 bg-secondary/20 border border-secondary/40 rounded-2xl flex items-center justify-center mx-auto mb-8">
-            <Shield className="text-secondary" size={40} />
+          <div className="flex justify-center mb-8">
+            <img src="/logo.png" alt="KYNAZ" className="h-20 w-auto object-contain" />
           </div>
-          <h1 className="text-4xl font-serif font-bold text-white mb-4">Kynaz Enterprise</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">KYNAZ</h1>
           <p className="text-white/70 text-lg max-w-xs leading-relaxed">
             Your trusted partner for insurance, takaful & compliance services in Malaysia.
           </p>
@@ -211,11 +208,11 @@ export default function Login() {
                 </Link>
 
                 <div className="lg:hidden flex items-center gap-2 mb-8">
-                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-serif font-bold text-white">K</div>
-                  <span className="font-serif font-bold text-primary">Kynaz Enterprise</span>
+                  <img src="/logo.png" alt="KYNAZ" className="h-8 w-auto object-contain" />
+                  <span className="font-bold text-primary">KYNAZ</span>
                 </div>
 
-                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Welcome back</h2>
+                <h2 className="text-3xl font-bold text-foreground mb-2">Welcome back</h2>
                 <p className="text-muted-foreground mb-8">Sign in to access your portal</p>
 
                 <Form {...loginForm}>
@@ -283,7 +280,7 @@ export default function Login() {
                   <KeyRound className="text-primary" size={32} />
                 </div>
 
-                <h2 className="text-3xl font-serif font-bold text-foreground mb-2 text-center">Enter OTP</h2>
+                <h2 className="text-3xl font-bold text-foreground mb-2 text-center">Enter OTP</h2>
                 <p className="text-muted-foreground mb-2 text-center text-sm">
                   We sent a 6-digit code to
                 </p>

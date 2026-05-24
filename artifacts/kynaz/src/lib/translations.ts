@@ -30,10 +30,10 @@ const translations: Record<string, Record<Lang, string>> = {
   "service.notFound": { en: "Service not found.", bm: "Perkhidmatan tidak dijumpai." },
 
   // ── Home page ─────────────────────────────────────────────────────────────
-  "home.badge": { en: "Malaysia's Trusted Insurance & Takaful Portal", bm: "Portal Insurans & Takaful Terpercaya Malaysia" },
+  "home.badge": { en: "One of Malaysia's Trusted Takaful Portal", bm: "Salah Satu Portal Takaful Terpercaya Malaysia" },
   "home.hero.title1": { en: "Premium Protection,", bm: "Perlindungan Premium," },
   "home.hero.title2": { en: "Rewarding Returns.", bm: "Pulangan Berbaloi." },
-  "home.hero.desc": { en: "Malaysia's most trusted integrated service portal for insurance, takaful, and compliance needs. Earn cashback on every transaction.", bm: "Portal perkhidmatan bersepadu paling dipercayai di Malaysia untuk keperluan insurans, takaful, dan pematuhan. Dapatkan cashback bagi setiap transaksi." },
+  "home.hero.desc": { en: "One of Malaysia's most trusted integrated service portals for insurance, takaful, and compliance needs. Earn cashback on every transaction.", bm: "Salah satu portal perkhidmatan bersepadu paling dipercayai di Malaysia untuk keperluan insurans, takaful, dan pematuhan. Dapatkan cashback bagi setiap transaksi." },
   "home.hero.explore": { en: "Explore Services", bm: "Terokai Perkhidmatan" },
   "home.hero.quote": { en: "Get Free Quote", bm: "Dapatkan Sebut Harga Percuma" },
   "home.hero.register": { en: "Register for Cashback", bm: "Daftar untuk Cashback" },

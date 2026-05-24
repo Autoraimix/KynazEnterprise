@@ -1,6 +1,6 @@
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useListServices, useGetQuotationSpeedSetting } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,8 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, FileSearch, CheckCircle2, Clock, Zap, Gift, Upload, Building2, Package, Layers } from "lucide-react";
-import { useState, useRef } from "react";
+import { ArrowLeft, FileSearch, CheckCircle2, Clock, Zap, Gift, Upload, Building2, Package, Layers, MessageCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 const INSURANCE_PROVIDERS = ["Takaful Malaysia", "Etiqa Takaful"];
 
@@ -41,6 +41,19 @@ const schema = z.object({
   numberOfPax: z.string().optional(),
   travelItinerary: z.string().optional(),
   preExistingConditions: z.string().optional(),
+  travelCountries: z.string().optional(),
+  travelAddonCovid: z.string().optional(),
+  travelAddonHomeCare: z.string().optional(),
+  travelAddonGolf: z.string().optional(),
+  travelAddonAdventurous: z.string().optional(),
+  flightDepartureNumber: z.string().optional(),
+  flightDepartureDate: z.string().optional(),
+  flightConnectingDepNumber: z.string().optional(),
+  flightConnectingDepDate: z.string().optional(),
+  flightReturnNumber: z.string().optional(),
+  flightReturnDate: z.string().optional(),
+  flightConnectingRetNumber: z.string().optional(),
+  flightConnectingRetDate: z.string().optional(),
   // Home & Household
   homeCoverageType: z.string().optional(),
   propertyAddress: z.string().optional(),
@@ -132,12 +145,29 @@ export default function GuestQuote() {
       windscreenProtection: "", travelDestination: "", travelGroupType: "",
       travelPlan: "", travelStartDate: "", travelEndDate: "",
       numberOfPax: "", travelItinerary: "", preExistingConditions: "",
+      travelCountries: "", travelAddonCovid: "", travelAddonHomeCare: "",
+      travelAddonGolf: "", travelAddonAdventurous: "",
+      flightDepartureNumber: "", flightDepartureDate: "",
+      flightConnectingDepNumber: "", flightConnectingDepDate: "",
+      flightReturnNumber: "", flightReturnDate: "",
+      flightConnectingRetNumber: "", flightConnectingRetDate: "",
       homeCoverageType: "", propertyAddress: "", buildingSumInsured: "",
       contentsSumInsured: "", companyName: "", rocNumber: "", officeAddress: "",
       officeTel: "", fwigRef: "", fwhsRef: "", immigrationOffice: "",
       numberOfWorkers: "", notes: "",
     },
   });
+
+  const searchStr = useSearch();
+
+  useEffect(() => {
+    if (!services || !searchStr) return;
+    const params = new URLSearchParams(searchStr);
+    const slug = params.get("service");
+    if (!slug) return;
+    const svc = services.find(s => s.slug === slug);
+    if (svc) form.setValue("serviceId", svc.id.toString());
+  }, [services, searchStr]);
 
   const watchedServiceId = form.watch("serviceId");
   const watchedTravelDest = form.watch("travelDestination");
@@ -230,6 +260,19 @@ export default function GuestQuote() {
       formData.icNumber = data.icNumber;
       if (data.travelItinerary) formData.travelItinerary = data.travelItinerary;
       if (data.preExistingConditions?.trim()) formData.preExistingConditions = data.preExistingConditions;
+      if (data.travelCountries?.trim()) formData.travelCountries = data.travelCountries;
+      if (data.travelAddonCovid) formData.travelAddonCovid = data.travelAddonCovid;
+      if (data.travelAddonHomeCare) formData.travelAddonHomeCare = data.travelAddonHomeCare;
+      if (data.travelAddonGolf) formData.travelAddonGolf = data.travelAddonGolf;
+      if (data.travelAddonAdventurous) formData.travelAddonAdventurous = data.travelAddonAdventurous;
+      if (data.flightDepartureNumber?.trim()) formData.flightDepartureNumber = data.flightDepartureNumber;
+      if (data.flightDepartureDate) formData.flightDepartureDate = data.flightDepartureDate;
+      if (data.flightConnectingDepNumber?.trim()) formData.flightConnectingDepNumber = data.flightConnectingDepNumber;
+      if (data.flightConnectingDepDate) formData.flightConnectingDepDate = data.flightConnectingDepDate;
+      if (data.flightReturnNumber?.trim()) formData.flightReturnNumber = data.flightReturnNumber;
+      if (data.flightReturnDate) formData.flightReturnDate = data.flightReturnDate;
+      if (data.flightConnectingRetNumber?.trim()) formData.flightConnectingRetNumber = data.flightConnectingRetNumber;
+      if (data.flightConnectingRetDate) formData.flightConnectingRetDate = data.flightConnectingRetDate;
     } else if (isHome) {
       formData.homeCoverageType = data.homeCoverageType;
       formData.propertyAddress = data.propertyAddress;
@@ -718,6 +761,140 @@ export default function GuestQuote() {
                           <FormMessage />
                         </FormItem>
                       )} />
+
+                      {/* Countries of Travel */}
+                      <FormField control={form.control} name="travelCountries" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Countries of Travel <span className="text-muted-foreground font-normal">(Optional)</span></FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="List all countries you will be visiting (e.g. Japan, South Korea, Singapore). Note: coverage excludes countries under travel advisories." rows={2} {...field} />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground mt-1">Coverage excludes countries with active government travel advisories.</p>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      {/* Optional Add-Ons */}
+                      <div className="bg-muted/40 border border-border rounded-xl p-4 space-y-4">
+                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Optional Add-On Coverage</p>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="travelAddonCovid" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>COVID-19 Add-On</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Not required" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  <SelectItem value="yes">Yes, I would like this</SelectItem>
+                                  <SelectItem value="no">No, not required</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="travelAddonHomeCare" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Extended Home Care Coverage</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Not required" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  <SelectItem value="yes">Yes, I would like this</SelectItem>
+                                  <SelectItem value="no">No, not required</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="travelAddonGolf" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Golf Coverage</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Not required" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  <SelectItem value="yes">Yes, I would like this</SelectItem>
+                                  <SelectItem value="no">No, not required</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="travelAddonAdventurous" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Adventurous Activity Add-On</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Not required" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  <SelectItem value="yes">Yes, I would like this</SelectItem>
+                                  <SelectItem value="no">No, not required</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
+
+                      {/* Flight Details */}
+                      <div className="bg-muted/40 border border-border rounded-xl p-4 space-y-4">
+                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Flight Details <span className="text-muted-foreground font-normal normal-case">(Optional)</span></p>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="flightDepartureNumber" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Departure Flight No.</FormLabel>
+                              <FormControl><Input placeholder="e.g. AK 123" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightDepartureDate" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Departure Date</FormLabel>
+                              <FormControl><Input type="date" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightConnectingDepNumber" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Connecting Departure Flight No.</FormLabel>
+                              <FormControl><Input placeholder="e.g. OD 456 (if any)" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightConnectingDepDate" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Connecting Departure Date</FormLabel>
+                              <FormControl><Input type="date" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightReturnNumber" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Return Flight No.</FormLabel>
+                              <FormControl><Input placeholder="e.g. AK 124" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightReturnDate" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Return Date</FormLabel>
+                              <FormControl><Input type="date" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightConnectingRetNumber" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Connecting Return Flight No.</FormLabel>
+                              <FormControl><Input placeholder="e.g. OD 789 (if any)" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="flightConnectingRetDate" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Connecting Return Date</FormLabel>
+                              <FormControl><Input type="date" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -922,6 +1099,20 @@ export default function GuestQuote() {
                 >
                   {isSubmitting ? "Submitting your request..." : "Submit Quotation Request"}
                 </Button>
+
+                {watchedServiceId && (
+                  <a
+                    href={`https://wa.me/60132727237?text=${encodeURIComponent(
+                      `Hai Kynaz, saya ingin membuat pertanyaan mengenai:\n*${selectedService?.name ?? "Takaful dan Insurance yang kynaz provide."}*`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white h-12 rounded-md font-semibold hover:bg-[#20b954] transition-colors text-sm"
+                  >
+                    <MessageCircle size={18} />
+                    Prefer to chat? WhatsApp us instead
+                  </a>
+                )}
               </form>
             </Form>
           )}
