@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { createHash } from "crypto";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
+import { sendEmail, emailProfileUpdated } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -32,14 +33,18 @@ function formatProfileUser(user: typeof usersTable.$inferSelect) {
 
 router.patch("/profile", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
-    const { fullName, phone, email, bankName, bankAccountNumber, bankAccountName } = req.body as {
-      fullName?: string; phone?: string; email?: string;
-      bankName?: string; bankAccountNumber?: string; bankAccountName?: string;
-    };
-
     if (!req.userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-    if (email) {
+    const { fullName, phone, email, bankName, bankAccountNumber, bankAccountName } = req.body as {
+      fullName?: string; phone?: string; email?: string;
+      bankName?: string | null; bankAccountNumber?: string | null; bankAccountName?: string | null;
+    };
+
+    // Fetch current user so we can detect what changed
+    const [current] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId));
+    if (!current) { res.status(404).json({ error: "User not found" }); return; }
+
+    if (email && email !== current.email) {
       const [existing] = await db.select({ id: usersTable.id })
         .from(usersTable)
         .where(eq(usersTable.email, email));
@@ -49,7 +54,7 @@ router.patch("/profile", requireAuth, async (req: AuthenticatedRequest, res): Pr
       }
     }
 
-    if (phone) {
+    if (phone && phone !== current.phone) {
       const [existing] = await db.select({ id: usersTable.id })
         .from(usersTable)
         .where(eq(usersTable.phone, phone));
@@ -60,15 +65,49 @@ router.patch("/profile", requireAuth, async (req: AuthenticatedRequest, res): Pr
     }
 
     const updateData: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
-    if (fullName !== undefined) updateData.fullName = fullName;
-    if (phone !== undefined) updateData.phone = phone;
-    if (email !== undefined) updateData.email = email;
-    if (bankName !== undefined) updateData.bankName = bankName || null;
-    if (bankAccountNumber !== undefined) updateData.bankAccountNumber = bankAccountNumber || null;
-    if (bankAccountName !== undefined) updateData.bankAccountName = bankAccountName || null;
+    const changedFields: string[] = [];
+
+    if (fullName !== undefined && fullName !== current.fullName) {
+      updateData.fullName = fullName;
+      changedFields.push("Full Name");
+    }
+    if (phone !== undefined && phone !== current.phone) {
+      updateData.phone = phone;
+      changedFields.push("Phone Number");
+    }
+    if (email !== undefined && email !== current.email) {
+      updateData.email = email;
+      changedFields.push("Email Address");
+    }
+    if (bankName !== undefined) {
+      updateData.bankName = bankName || null;
+      if ((bankName || null) !== current.bankName) changedFields.push("Bank Name");
+    }
+    if (bankAccountNumber !== undefined) {
+      updateData.bankAccountNumber = bankAccountNumber || null;
+      if ((bankAccountNumber || null) !== current.bankAccountNumber) changedFields.push("Bank Account Number");
+    }
+    if (bankAccountName !== undefined) {
+      updateData.bankAccountName = bankAccountName || null;
+      if ((bankAccountName || null) !== current.bankAccountName) changedFields.push("Bank Account Name");
+    }
 
     const [user] = await db.update(usersTable).set(updateData).where(eq(usersTable.id, req.userId)).returning();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    // Send email notification if anything actually changed
+    if (changedFields.length > 0) {
+      const notifyEmail = email ?? current.email;
+      sendEmail({
+        to: notifyEmail,
+        subject: "Your Kynaz Profile Has Been Updated",
+        html: emailProfileUpdated({
+          name: user.fullName,
+          email: notifyEmail,
+          changedFields,
+        }),
+      }).catch(() => {});
+    }
 
     res.json(formatProfileUser(user));
   } catch (_err) {
@@ -78,14 +117,14 @@ router.patch("/profile", requireAuth, async (req: AuthenticatedRequest, res): Pr
 
 router.post("/auth/change-password", requireAuth, async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
+    if (!req.userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
     const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
 
     if (!newPassword || newPassword.length < 6) {
       res.status(400).json({ error: "New password must be at least 6 characters" });
       return;
     }
-
-    if (!req.userId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId));
     if (!user) { res.status(404).json({ error: "User not found" }); return; }

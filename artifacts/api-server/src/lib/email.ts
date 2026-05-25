@@ -550,6 +550,24 @@ export function emailAgentWelcome(opts: { name: string; agentId: string; referra
   `);
 }
 
+export function emailProfileUpdated(opts: { name: string; email: string; changedFields: string[] }): string {
+  const fieldList = opts.changedFields
+    .map(f => `<li style="margin:4px 0;color:#333">${f}</li>`)
+    .join("");
+  return baseLayout(`
+    <h2 style="color:#0d1f3c;margin-top:0">Profile Updated Successfully</h2>
+    <p>Hi <strong>${opts.name}</strong>,</p>
+    <p>Your Kynaz Enterprise profile has been updated. The following information was changed:</p>
+    <div class="section">
+      <ul style="margin:0;padding-left:18px">${fieldList}</ul>
+    </div>
+    <div class="alert-box">
+      If you did not make these changes, please contact our support team immediately or reset your password.
+    </div>
+    <p style="color:#888;font-size:13px">This change was made on ${new Date().toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur" })} (MYT).</p>
+  `, "Profile Updated");
+}
+
 export function emailWelcomeCreatedByAdmin(opts: { name: string; email: string; tempPassword: string; role: string; referralCode: string }): string {
   return baseLayout(`
     <h2 style="color:#0d1f3c;margin-top:0">Your Kynaz Enterprise Account is Ready</h2>

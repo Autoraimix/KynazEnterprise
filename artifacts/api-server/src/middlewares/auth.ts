@@ -21,9 +21,25 @@ export async function requireAuth(
 
   const token = authHeader.slice(7);
   const tokenStore = getTokenStore();
-  const userId = tokenStore.get(token);
 
+  // Check in-memory store first, fall back to DB (survives server restarts)
+  let userId = tokenStore.get(token);
   if (!userId) {
+    const [u] = await db
+      .select({ id: usersTable.id, role: usersTable.role, isSuspended: usersTable.isSuspended })
+      .from(usersTable)
+      .where(eq(usersTable.authToken, token));
+    if (u && !u.isSuspended) {
+      tokenStore.set(token, u.id); // restore in-memory cache
+      req.userId = u.id;
+      req.userRole = u.role;
+      next();
+      return;
+    }
+    if (u?.isSuspended) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     res.status(401).json({ error: "Invalid or expired token" });
     return;
   }

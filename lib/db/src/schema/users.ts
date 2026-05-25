@@ -20,6 +20,7 @@ export const usersTable = pgTable("users", {
   bankName: text("bank_name"),
   bankAccountNumber: text("bank_account_number"),
   bankAccountName: text("bank_account_name"),
+  authToken: text("auth_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

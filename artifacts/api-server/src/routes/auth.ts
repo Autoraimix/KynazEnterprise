@@ -96,6 +96,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
     const newCode = generateReferralCode();
     const passwordHash = hashPassword(password);
+    const token = generateToken(Date.now()); // generate token before insert
 
     const [user] = await db.insert(usersTable).values({
       fullName,
@@ -108,11 +109,14 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       cashbackBalance: "0.00",
       isVerified: false,
       isSuspended: false,
+      authToken: token,
       updatedAt: new Date(),
     }).returning();
 
-    const token = generateToken(user.id);
-    tokenStore.set(token, user.id);
+    const finalToken = generateToken(user.id);
+    tokenStore.set(finalToken, user.id);
+    // Persist token to DB so it survives server restarts
+    db.update(usersTable).set({ authToken: finalToken }).where(eq(usersTable.id, user.id)).catch(() => {});
 
     let agentName: string | undefined;
     if (referralCode) {
@@ -152,7 +156,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       }),
     }).catch(() => {});
 
-    res.status(201).json({ user: formatUser(user), token });
+    res.status(201).json({ user: formatUser(user), token: finalToken });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("unique") || msg.includes("duplicate")) {
@@ -269,6 +273,8 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
 
     const token = generateToken(user.id);
     tokenStore.set(token, user.id);
+    // Persist token to DB so it survives server restarts
+    db.update(usersTable).set({ authToken: token }).where(eq(usersTable.id, user.id)).catch(() => {});
 
     res.json({ user: formatUser(user), token });
   } catch (err) {
@@ -282,6 +288,8 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     tokenStore.delete(token);
+    // Clear persisted token from DB
+    db.update(usersTable).set({ authToken: null }).where(eq(usersTable.authToken, token)).catch(() => {});
   }
   res.json({ message: "Logged out successfully" });
 });
@@ -294,7 +302,17 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   }
 
   const token = authHeader.slice(7);
-  const userId = tokenStore.get(token);
+
+  // Check in-memory store first, fall back to DB
+  let userId = tokenStore.get(token);
+  if (!userId) {
+    const [u] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.authToken, token));
+    if (u) {
+      tokenStore.set(token, u.id); // restore in-memory cache
+      userId = u.id;
+    }
+  }
+
   if (!userId) {
     res.status(401).json({ error: "Invalid or expired token" });
     return;
